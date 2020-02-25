@@ -45,6 +45,9 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     
     # Set up 
     self.setupCustomViews()
+    
+    logic = LiverBiopsy_NRTUSLogic()
+    logic.setupTransforms()
 
     # connections
     self.ui.saveButton.connect('clicked(bool)', self.onSaveScene)
@@ -58,11 +61,24 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     # Add vertical spacer
     self.layout.addStretch(1)
     
-    # Set up Transfoms
+    # Set up slicer scene
+    self.setupScene()
+    
+
     
     
+
+  def setupScene(self):
+		self.PIVOT_CALIBRATION = 0
+		self.SPIN_CALIBRATION = 1
+		
+		self.modulePath = os.path.dirname(slicer.modules.liverbiopsy_nrtus.path)
+    self.moduleTransformsPath = os.path.join(self.modulePath, 'Resources/Transforms')
+		
+		self.needleCalibrationMode = self.PIVOT_CALIBRATION
+	
     # Models
-    
+   
     self.needleModel_NeedleTip = slicer.util.getFirstNodeByName('NeedleModel','vtkMRMLModelNode')
     if not self.needleModel_NeedleTip:
       slicer.modules.createmodels.logic().CreateNeedle(60,1.0, 1.5, 0)
@@ -70,9 +86,33 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
       self.needleModel_NeedleTip.GetDisplayNode().SetColor(0.33, 1.0, 1.0)
       self.needleModel_NeedleTip.SetName("NeedleModel")
       self.needleModel_NeedleTip.GetDisplayNode().SliceIntersectionVisibilityOn()
+      
+    # Transforms
     
-    
-
+    # Setup Needle Transforms    
+    self.NeedleTipToNeedle = slicer.util.getFirstNodeByName('NeedleTipToNeedle', className='vtkMRMLLinearTransformNode')
+    if not self.NeedleTipToNeedle:
+			needleTipToNeedleFilePath = os.path.join(self.moduleTransformsPath, 'NeedleTipToNeedle.h5')
+			[success, self.NeedleTipToNeedle] = slicer.util.loadTransform(NeedleTipToNeedleFilePath, returnNode = True)
+      if success == True:
+				self.NeedleTipToNeedle.SetName("NeedleTipToNeedle")
+        slicer.mrmlScene.AddNode(self.NeedleTipToNeedle)
+      else:
+				logging.debug('Could not load NeedleTipToNeedle from file')
+        self.NeedleTipToNeedle = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'NeedleTipToNeedle')
+        if not self.NeedleTipToNeedle:
+          logging.debug('Failed: Creation of NeedleTipToNeedle transform')
+        else:
+          logging.debug('Creation of NeedleTipToNeedle transform')  
+					
+		# OpenIGTLink transforms
+		self.NeedleToReference = slicer.util.getFirstNodeByName(
+      'NeedleToReference', className='vtkMRMLLinearTransformNode')
+    if not self.NeedleToReference:
+      self.NeedleToReference=slicer.vtkMRMLLinearTransformNode()
+      self.NeedleToReference.SetName("NeedleToReference")
+      slicer.mrmlScene.AddNode(self.needleToReference)
+     
   def cleanup(self):
     pass
 
@@ -162,22 +202,69 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     layoutManager.setLayout(requestedID)  
     
   def onSpinCalibration(self):
-    ''' Code from LumpNav for reference
-    logging.debug('onNeedleSpinClicked')
-    self.needleCalibrationMode = self.LUMPNAV_SPIN_CALIBRATION
-    self.needlePivotButton.setEnabled(False)
-    self.needleSpinButton.setEnabled(False)
-    self.cauteryPivotButton.setEnabled(False)
-    self.pivotCalibrationResultTargetNode = self.needleTipToNeedle
-    self.pivotCalibrationResultTargetName = 'NeedleTipToNeedle'
-    self.pivotCalibrationLogic.SetAndObserveTransformNode( self.needleToReference )
-    self.pivotCalibrationStopTime = time.time() + float(self.parameterNode.GetParameter('PivotCalibrationDurationSec'))
-    self.pivotCalibrationLogic.SetRecordingState(True)
-    self.onPivotSamplingTimeout()
-    '''
+    logging.debug('onSpinCalibration')
+    
+    self.ui.pivotCalibrationButton.setEnabled(False)
+    self.ui.spinCalibrationButton.setEnabled(False)
+    
+    logic = LiverBiopsy_NRTUSLogic()
+    logic.spinCalibration()
+    
+    self.ui.pivotCalibrationButton.setEnabled(True)
+    self.ui.spinCalibrationButton.setEnabled(True)
+
     
   def onPivotCalibration(self):
-    pass
+    logging.debug('onPivotCalibration')
+    
+    self.ui.pivotCalibrationButton.setEnabled(False)
+    self.ui.spinCalibrationButton.setEnabled(False)
+    
+    
+    
+    self.calibrationTimeout(pivotCalibrationStopTime, "Pivot")
+    
+    self.ui.pivotCalibrationButton.setEnabled(True)
+    self.ui.spinCalibrationButton.setEnabled(True)
+
+'''
+    logging.debug('pivotCalibration')
+    
+    
+
+    self.NeedleToReference = slicer.util.getFirstNodeByName('NeedleToReference', className='vtkMRMLTransformNode')
+    if not self.NeedleToReference:     
+      logging.debug('Failed: Could not find NeedleToReference')
+    
+    self.pivotCalibrationLogic=slicer.modules.pivotcalibration.logic()
+    
+    self.pivotCalibrationResultTargetNode = self.NeedleTipToNeedle
+    self.pivotCalibrationResultTargetName = 'NeedleTipToNeedle'
+    
+    self.pivotCalibrationLogic.SetAndObserveTransformNode( self.NeedleToReference )
+    self.pivotCalibrationStopTime = time.time() + float(5)
+    self.pivotCalibrationLogic.SetRecordingState(True)
+    return self.pivotCalibrationStopTime
+'''
+
+
+
+  def calibrationTimeout(self, calibrationStopTime, mode):
+    self.ui.countdownLabel.setText("Calibrating for {0:.0f} more seconds".format(calibrationStopTime-time.time()))
+    
+    if(time.time()<calibrationStopTime):
+      # continue
+      if mode == "Pivot":
+        self.startPivotCalibration()
+      else: # mode == "Spin"
+        self.startSpinCalibration()
+    else:
+      # calibration completed
+      if mode == "Pivot":
+        self.stopPivotCalibration()
+      else: # mode == "Spin"
+        self.stopSpinCalibration()
+  
   
   def onTestFunction(self):
     pass
@@ -196,12 +283,9 @@ class LiverBiopsy_NRTUSLogic(ScriptedLoadableModuleLogic):
   Uses ScriptedLoadableModuleLogic base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
-
-  def spinCalibration(self):
-    pass
-    
-  def pivotCalibration(self):
-    self.pivotCalibrationLogic=slicer.modules.pivotcalibration.logic()
+  
+  def setupTransforms(self):
+    pass    
  
 
 

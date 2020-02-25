@@ -56,20 +56,33 @@
       <string>Needle Calibration</string>
      </property>
      <property name="collapsed">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <layout class="QFormLayout" name="formLayout_3">
       <item row="1" column="1">
+       <widget class="QPushButton" name="spinCalibrationButton">
+        <property name="text">
+         <string>Start Spin Calibration</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
        <widget class="QPushButton" name="pivotCalibrationButton">
         <property name="text">
          <string>Start Pivot Calibration</string>
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
-       <widget class="QPushButton" name="spinCalibrationButton">
+      <item row="2" column="1">
+       <widget class="QLabel" name="countdownLabel">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
         <property name="text">
-         <string>Start Spin Calibration</string>
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
         </property>
        </widget>
       </item>
