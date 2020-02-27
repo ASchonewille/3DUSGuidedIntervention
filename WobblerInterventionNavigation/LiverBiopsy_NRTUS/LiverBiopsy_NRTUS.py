@@ -46,6 +46,8 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     # Set up 
     self.setupCustomViews()
     
+    self.calibrationErrorThresholdMm = 0.9
+    
     logic = LiverBiopsy_NRTUSLogic()
     logic.setupTransforms()
 
@@ -56,6 +58,11 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     self.ui.spinCalibrationButton.connect('clicked(bool)', self.onSpinCalibration)
     self.ui.pivotCalibrationButton.connect('clicked(bool)', self.onPivotCalibration)
     
+    self.ui.needleCalibrationSamplingTimer = qt.QTimer()
+    self.ui.needleCalibrationSamplingTimer.setInterval(500)
+    self.ui.needleCalibrationSamplingTimer.setSingleShot(True)
+    self.ui.needleCalibrationSamplingTimer.connect('timeout()', self.needleCalibrationTimeout)
+    
     self.ui.testButton.connect('clicked(bool)', self.onTestFunction)
 
     # Add vertical spacer
@@ -63,22 +70,21 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     
     # Set up slicer scene
     self.setupScene()
-    
 
-    
-    
 
   def setupScene(self):
-		self.PIVOT_CALIBRATION = 0
-		self.SPIN_CALIBRATION = 1
-		
-		self.modulePath = os.path.dirname(slicer.modules.liverbiopsy_nrtus.path)
+    self.PIVOT_CALIBRATION = 0
+    self.SPIN_CALIBRATION = 1
+    
+    self.modulePath = os.path.dirname(slicer.modules.liverbiopsy_nrtus.path)
     self.moduleTransformsPath = os.path.join(self.modulePath, 'Resources/Transforms')
-		
-		self.needleCalibrationMode = self.PIVOT_CALIBRATION
-	
+    
+    self.needleCalibrationMode = self.PIVOT_CALIBRATION
+    
+    self.pivotCalibrationLogic = slicer.modules.pivotcalibration.logic()
+  
     # Models
-   
+    
     self.needleModel_NeedleTip = slicer.util.getFirstNodeByName('NeedleModel','vtkMRMLModelNode')
     if not self.needleModel_NeedleTip:
       slicer.modules.createmodels.logic().CreateNeedle(60,1.0, 1.5, 0)
@@ -92,29 +98,44 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     # Setup Needle Transforms    
     self.NeedleTipToNeedle = slicer.util.getFirstNodeByName('NeedleTipToNeedle', className='vtkMRMLLinearTransformNode')
     if not self.NeedleTipToNeedle:
-			needleTipToNeedleFilePath = os.path.join(self.moduleTransformsPath, 'NeedleTipToNeedle.h5')
-			[success, self.NeedleTipToNeedle] = slicer.util.loadTransform(NeedleTipToNeedleFilePath, returnNode = True)
+      self.NeedleTipToNeedleFilePath = os.path.join(self.moduleTransformsPath, 'NeedleTipToNeedle.h5')
+      [success, self.NeedleTipToNeedle] = slicer.util.loadTransform(self.NeedleTipToNeedleFilePath, returnNode = True)
       if success == True:
-				self.NeedleTipToNeedle.SetName("NeedleTipToNeedle")
+        self.NeedleTipToNeedle.SetName("NeedleTipToNeedle")
         slicer.mrmlScene.AddNode(self.NeedleTipToNeedle)
       else:
-				logging.debug('Could not load NeedleTipToNeedle from file')
+        logging.debug('Could not load NeedleTipToNeedle from file')
         self.NeedleTipToNeedle = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'NeedleTipToNeedle')
         if not self.NeedleTipToNeedle:
           logging.debug('Failed: Creation of NeedleTipToNeedle transform')
         else:
           logging.debug('Creation of NeedleTipToNeedle transform')  
-					
-		# OpenIGTLink transforms
-		self.NeedleToReference = slicer.util.getFirstNodeByName(
-      'NeedleToReference', className='vtkMRMLLinearTransformNode')
+
+    # OpenIGTLink transforms
+
+    # Set up ReferenceToRas
+    # TODO confirm with tracking
+    self.ReferenceToRas = slicer.util.getFirstNodeByName('ReferenceToRas', className='vtkMRMLLinearTransformNode')
+    if not self.ReferenceToRas:
+      self.ReferenceToRas=slicer.vtkMRMLLinearTransformNode()
+      self.ReferenceToRas.SetName("ReferenceToRas")
+      slicer.mrmlScene.AddNode(self.ReferenceToRas)
+
+    self.NeedleToReference = slicer.util.getFirstNodeByName('NeedleToReference', className='vtkMRMLLinearTransformNode')
     if not self.NeedleToReference:
       self.NeedleToReference=slicer.vtkMRMLLinearTransformNode()
       self.NeedleToReference.SetName("NeedleToReference")
-      slicer.mrmlScene.AddNode(self.needleToReference)
-     
+      slicer.mrmlScene.AddNode(self.NeedleToReference)
+
+    # Build Transform Tree
+    self.NeedleToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
+    self.NeedleTipToNeedle.SetAndObserveTransformNodeID(self.NeedleToReference.GetID())
+    self.needleModel_NeedleTip.SetAndObserveTransformNodeID(self.NeedleTipToNeedle.GetID())
+
+
   def cleanup(self):
     pass
+
 
   def setupCustomViews(self):
     RGBO3DLayout = (
@@ -166,10 +187,12 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
 
     layoutManager = slicer.app.layoutManager()
     layoutManager.layoutLogic().GetLayoutNode().AddLayoutDescription(RGBO3DLayoutID, RGBO3DLayout)
-    
+
+
   def onConnectPLUS(self):
     pass
-    
+
+
   def onSaveScene(self):
     if (self.ui.savePath.currentPath):
       savePath = self.ui.savePath.currentPath
@@ -184,91 +207,125 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
       print("saved")
     else:
       print("Invalid Input Value")
-      
+
+
   def onChangeLayout(self):
     view = self.ui.layoutComboBox.currentText
     print(view)
     
     if(view == "Conventional View"):
-      requestedID =  2
+      requestedID = 2
     elif(view == "Red Slice View"):
-      requestedID =  6
+      requestedID = 6
     elif(view == "RGBO3D View"):
-      requestedID =  400
+      requestedID = 400
     else:
       print("Invalid Input Value")
     
     layoutManager = slicer.app.layoutManager()
     layoutManager.setLayout(requestedID)  
-    
+
+
   def onSpinCalibration(self):
     logging.debug('onSpinCalibration')
     
-    self.ui.pivotCalibrationButton.setEnabled(False)
-    self.ui.spinCalibrationButton.setEnabled(False)
-    
-    logic = LiverBiopsy_NRTUSLogic()
-    logic.spinCalibration()
-    
-    self.ui.pivotCalibrationButton.setEnabled(True)
-    self.ui.spinCalibrationButton.setEnabled(True)
+    self.needleCalibrationMode = self.SPIN_CALIBRATION
+    self.needleCalibrationStart()
 
-    
+
   def onPivotCalibration(self):
     logging.debug('onPivotCalibration')
     
+    self.needleCalibrationMode = self.PIVOT_CALIBRATION
+    self.needleCalibrationStart()
+
+
+  def needleCalibrationStart(self):
+    logging.debug('needleCalibrationStart')
+    
     self.ui.pivotCalibrationButton.setEnabled(False)
     self.ui.spinCalibrationButton.setEnabled(False)
     
+    self.needleCalibrationResultNode = self.NeedleTipToNeedle
+    self.needleCalibrationResultName = 'NeedleTipToNeedle'
     
+    self.pivotCalibrationLogic.SetAndObserveTransformNode(self.NeedleToReference)
     
-    self.calibrationTimeout(pivotCalibrationStopTime, "Pivot")
+    self.needleCalibrationStopTime = time.time()+float(5)
+    self.pivotCalibrationLogic.SetRecordingState(True)
+    self.needleCalibrationTimeout()
+
+
+  def needleCalibrationTimeout(self):
+    logging.debug('needleCalibrationTimeout')
+    
+    self.ui.calibrationErrorLabel.setText("")
+    self.ui.countdownLabel.setText("Calibrating for {0:.0f} more seconds".format(self.needleCalibrationStopTime - time.time()))
+    
+    if(time.time()<self.needleCalibrationStopTime):
+      # continue if calibration time isn't finished
+      self.ui.needleCalibrationSamplingTimer.start()
+    else:
+      # calibration completed
+      self.stopNeedleCalibration()
+
+
+  def stopNeedleCalibration(self):
+    logging.debug('stopNeedleCalibration')
     
     self.ui.pivotCalibrationButton.setEnabled(True)
     self.ui.spinCalibrationButton.setEnabled(True)
-
-'''
-    logging.debug('pivotCalibration')
     
-    
-
-    self.NeedleToReference = slicer.util.getFirstNodeByName('NeedleToReference', className='vtkMRMLTransformNode')
-    if not self.NeedleToReference:     
-      logging.debug('Failed: Could not find NeedleToReference')
-    
-    self.pivotCalibrationLogic=slicer.modules.pivotcalibration.logic()
-    
-    self.pivotCalibrationResultTargetNode = self.NeedleTipToNeedle
-    self.pivotCalibrationResultTargetName = 'NeedleTipToNeedle'
-    
-    self.pivotCalibrationLogic.SetAndObserveTransformNode( self.NeedleToReference )
-    self.pivotCalibrationStopTime = time.time() + float(5)
-    self.pivotCalibrationLogic.SetRecordingState(True)
-    return self.pivotCalibrationStopTime
-'''
-
-
-
-  def calibrationTimeout(self, calibrationStopTime, mode):
-    self.ui.countdownLabel.setText("Calibrating for {0:.0f} more seconds".format(calibrationStopTime-time.time()))
-    
-    if(time.time()<calibrationStopTime):
-      # continue
-      if mode == "Pivot":
-        self.startPivotCalibration()
-      else: # mode == "Spin"
-        self.startSpinCalibration()
+    if self.needleCalibrationMode == self.PIVOT_CALIBRATION:
+      calibrationSuccess = self.pivotCalibrationLogic.ComputePivotCalibration()
     else:
-      # calibration completed
-      if mode == "Pivot":
-        self.stopPivotCalibration()
-      else: # mode == "Spin"
-        self.stopSpinCalibration()
-  
-  
-  def onTestFunction(self):
+      calibrationSuccess = self.pivotCalibrationLogic.ComputeSpinCalibration()
+      
+    if not calibrationSuccess:
+      self.ui.countdownLabel.setText("Calibration failed: ")
+      self.ui.calibrationErrorLabel.setText(self.pivotCalibrationLogic.GetErrorText())
+      self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
+      return
+      
+    if self.needleCalibrationMode == self.PIVOT_CALIBRATION:
+      if(self.pivotCalibrationLogic.GetPivotRMSE() >= float(self.calibrationErrorThresholdMm)):
+        self.ui.countdownLabel.setText("Pivot Calibration failed:")
+        self.ui.calibrationErrorLabel.setText("Error = {0:.2f} mm").format(self.pivotCalibrationLogic.GetPivotRMSE())
+        self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
+        return
+    else:
+      if(self.pivotCalibrationLogic.GetSpinRMSE() >= float(self.calibrationErrorThresholdMm)):
+        self.ui.countdownLabel.setText("Spin calibration failed:")
+        self.ui.calibrationErrorLabel.setText("Error = {0:.2f} mm").format(self.pivotCalibrationLogic.GetSpinRMSE())
+        self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
+        return
+      
+    NeedleTipToNeedleMatrix = vtk.vtkMatrix4x4()
+    self.pivotCalibrationLogic.GetToolTipToToolMatrix(NeedleTipToNeedleMatrix)
+    self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
+    self.needleCalibrationResultNode.SetMatrixTransformToParent(NeedleTipToNeedleMatrix)
+    slicer.util.saveNode(self.needleCalibrationResultNode, os.path.join(self.moduleTransformsPath, self.needleCalibrationResultName + ".h5"))
+    
+    if self.needleCalibrationMode == self.PIVOT_CALIBRATION:
+      self.ui.countdownLabel.setText("Pivot calibration completed")
+      self.ui.calibrationErrorLabel.setText("Error = {0:.2f} mm".format(self.pivotCalibrationLogic.GetPivotRMSE()))
+      logging.debug("Pivot calibration completed. Tool: {0}. RMSE = {1:.2f} mm".format(self.needleCalibrationResultNode.GetName(), self.pivotCalibrationLogic.GetPivotRMSE()))
+    else:
+      self.ui.countdownLabel.setText("Spin calibration completed.")
+      self.ui.calibrationErrorLabel.setText("Error = {0:.2f} mm".format(self.pivotCalibrationLogic.GetSpinRMSE()))
+      logging.debug("Spin calibration completed. Tool: {0}. RMSE = {1:.2f} mm".format(self.needleCalibrationResultNode.GetName(), self.pivotCalibrationLogic.GetSpinRMSE()))
+     
+    # Compute approximate needle length if we perform pivot calibration for the needle and update needle model
+    if self.needleCalibrationResultName == 'NeedleTipToNeedle':
+      self.updateDisplayedNeedleLength()
+
+
+  def updateDisplayedNeedleLength(self):
     pass
-        
+
+
+  def onTestFunction(self):
+    pass 
 
 #
 # LiverBiopsy_NRTUSLogic
@@ -301,11 +358,13 @@ class LiverBiopsy_NRTUSTest(ScriptedLoadableModuleTest):
     """
     slicer.mrmlScene.Clear(0)
 
+
   def runTest(self):
     """Run as few or as many tests as needed here.
     """
     self.setUp()
     self.test_LiverBiopsy_NRTUS1()
+
 
   def test_LiverBiopsy_NRTUS1(self):
     """ Ideally you should have several levels of tests.  At the lowest level

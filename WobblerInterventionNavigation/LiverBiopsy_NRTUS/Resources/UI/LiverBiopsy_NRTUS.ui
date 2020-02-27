@@ -86,6 +86,19 @@
         </property>
        </widget>
       </item>
+      <item row="3" column="1">
+       <widget class="QLabel" name="calibrationErrorLabel">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
