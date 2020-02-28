@@ -1,4 +1,4 @@
-import os, time
+import os, time, math
 import unittest
 import vtk, qt, ctk, slicer
 from slicer.ScriptedLoadableModule import *
@@ -55,13 +55,15 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     self.ui.saveButton.connect('clicked(bool)', self.onSaveScene)
     self.ui.connectPLUSButton.connect('clicked(bool)', self.onConnectPLUS)
     self.ui.layoutComboBox.connect('activated(const QString &)', self.onChangeLayout)
-    self.ui.spinCalibrationButton.connect('clicked(bool)', self.onSpinCalibration)
-    self.ui.pivotCalibrationButton.connect('clicked(bool)', self.onPivotCalibration)
+    self.ui.needleSpinCalibrationButton.connect('clicked(bool)', self.needleSpinCalibration)
+    self.ui.needlePivotCalibrationButton.connect('clicked(bool)', self.needlePivotCalibration)
+    self.ui.stylusSpinCalibrationButton.connect('clicked(bool)', self.stylusSpinCalibration)
+    self.ui.stylusPivotCalibrationButton.connect('clicked(bool)', self.stylusPivotCalibration)
     
-    self.ui.needleCalibrationSamplingTimer = qt.QTimer()
-    self.ui.needleCalibrationSamplingTimer.setInterval(500)
-    self.ui.needleCalibrationSamplingTimer.setSingleShot(True)
-    self.ui.needleCalibrationSamplingTimer.connect('timeout()', self.needleCalibrationTimeout)
+    self.toolCalibrationTimer = qt.QTimer()
+    self.toolCalibrationTimer.setInterval(500)
+    self.toolCalibrationTimer.setSingleShot(True)
+    self.toolCalibrationTimer.connect('timeout()', self.toolCalibrationTimeout)
     
     self.ui.testButton.connect('clicked(bool)', self.onTestFunction)
 
@@ -79,22 +81,62 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     self.modulePath = os.path.dirname(slicer.modules.liverbiopsy_nrtus.path)
     self.moduleTransformsPath = os.path.join(self.modulePath, 'Resources/Transforms')
     
-    self.needleCalibrationMode = self.PIVOT_CALIBRATION
+    self.toolCalibrationMode = self.PIVOT_CALIBRATION
     
     self.pivotCalibrationLogic = slicer.modules.pivotcalibration.logic()
   
     # Models
-    
-    self.needleModel_NeedleTip = slicer.util.getFirstNodeByName('NeedleModel','vtkMRMLModelNode')
-    if not self.needleModel_NeedleTip:
+    self.StylusModel_StylusTip = slicer.util.getFirstNodeByName('StylusModel','vtkMRMLModelNode')
+    if not self.StylusModel_StylusTip:
       slicer.modules.createmodels.logic().CreateNeedle(60,1.0, 1.5, 0)
-      self.needleModel_NeedleTip=slicer.util.getFirstNodeByName("NeedleModel",'vtkMRMLModelNode')
-      self.needleModel_NeedleTip.GetDisplayNode().SetColor(0.33, 1.0, 1.0)
-      self.needleModel_NeedleTip.SetName("NeedleModel")
-      self.needleModel_NeedleTip.GetDisplayNode().SliceIntersectionVisibilityOn()
+      self.StylusModel_StylusTip=slicer.util.getFirstNodeByName("NeedleModel",'vtkMRMLModelNode')
+      self.StylusModel_StylusTip.GetDisplayNode().SetColor(0.33, 1.0, 1.0)
+      self.StylusModel_StylusTip.SetName("StylusModel")
+      self.StylusModel_StylusTip.GetDisplayNode().SliceIntersectionVisibilityOn()
+    self.StylusModel_StylusTip.GetDisplayNode().SetColor(0,1,1)
+    
+    self.NeedleModel_NeedleTip = slicer.util.getFirstNodeByName('NeedleModel','vtkMRMLModelNode')
+    if not self.NeedleModel_NeedleTip:
+      slicer.modules.createmodels.logic().CreateNeedle(60,1.0, 1.5, 0)
+      self.NeedleModel_NeedleTip=slicer.util.getFirstNodeByName("NeedleModel",'vtkMRMLModelNode')
+      self.NeedleModel_NeedleTip.GetDisplayNode().SetColor(0.33, 1.0, 1.0)
+      self.NeedleModel_NeedleTip.SetName("NeedleModel")
+      self.NeedleModel_NeedleTip.GetDisplayNode().SliceIntersectionVisibilityOn()
+    self.NeedleModel_NeedleTip.GetDisplayNode().SetColor(1,1,0)
       
     # Transforms
     
+    # Setup Stylus Transforms
+    self.StylusTipToStylus = slicer.util.getFirstNodeByName('StylusTipToStylus', className='vtkMRMLLinearTransformNode')
+    if not self.StylusTipToStylus:
+      self.StylusTipToStylusFilePath = os.path.join(self.moduleTransformsPath, 'StylusTipToStylus.h5')
+      [success, self.StylusTipToStylus] = slicer.util.loadTransform(self.StylusTipToStylusFilePath, returnNode = True)
+      if success == True:
+        self.StylusTipToStylus.SetName("StylusTipToStylus")
+        slicer.mrmlScene.AddNode(self.StylusTipToStylus)
+      else:
+        logging.debug('Could not load StylusTipToStylus from file')
+        self.StylusTipToStylus = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'StylusTipToStylus')
+        if not self.StylusTipToStylus:
+          logging.debug('Failed: Creation of StylusTipToStylus transform')
+        else:
+          logging.debug('Creation of StylusTipToStylus transform')
+          
+    self.StylusBaseToStylus = slicer.util.getFirstNodeByName('StylusBaseToStylus', className='vtkMRMLLinearTransformNode')
+    if not self.StylusBaseToStylus:
+      StylusBaseToStylusFilePath = os.path.join(self.moduleTransformsPath, 'StylusBaseToStylus.h5')
+      [success, self.StylusBaseToStylus] = slicer.util.loadTransform(StylusBaseToStylusFilePath, returnNode = True)
+      if success == True:
+        self.StylusBaseToStylus.SetName("StylusBaseToStylus")
+        slicer.mrmlScene.AddNode(self.StylusBaseToStylus)
+      else:
+        logging.debug('Could not load StylusBaseToStylus from file')
+        self.StylusBaseToStylus = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'StylusBaseToStylus')
+        if not self.StylusBaseToStylus:
+          logging.debug('Failed: Creation of StylusBaseToStylus transform')
+        else:
+          logging.debug('Creation of StylusBaseToStylus transform')
+          
     # Setup Needle Transforms    
     self.NeedleTipToNeedle = slicer.util.getFirstNodeByName('NeedleTipToNeedle', className='vtkMRMLLinearTransformNode')
     if not self.NeedleTipToNeedle:
@@ -109,7 +151,22 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
         if not self.NeedleTipToNeedle:
           logging.debug('Failed: Creation of NeedleTipToNeedle transform')
         else:
-          logging.debug('Creation of NeedleTipToNeedle transform')  
+          logging.debug('Creation of NeedleTipToNeedle transform')
+          
+    self.NeedleBaseToNeedle = slicer.util.getFirstNodeByName('NeedleBaseToNeedle', className='vtkMRMLLinearTransformNode')
+    if not self.NeedleBaseToNeedle:
+      NeedleBaseToNeedleFilePath = os.path.join(self.moduleTransformsPath, 'NeedleBaseToNeedle.h5')
+      [success, self.NeedleBaseToNeedle] = slicer.util.loadTransform(NeedleBaseToNeedleFilePath, returnNode = True)
+      if success == True:
+        self.NeedleBaseToNeedle.SetName("NeedleBaseToNeedle")
+        slicer.mrmlScene.AddNode(self.NeedleBaseToNeedle)
+      else:
+        logging.debug('Could not load NeedleBaseToNeedle from file')
+        self.NeedleBaseToNeedle = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'NeedleBaseToNeedle')
+        if not self.NeedleBaseToNeedle:
+          logging.debug('Failed: Creation of NeedleBaseToNeedle transform')
+        else:
+          logging.debug('Creation of NeedleBaseToNeedle transform')
 
     # OpenIGTLink transforms
 
@@ -120,17 +177,29 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
       self.ReferenceToRas=slicer.vtkMRMLLinearTransformNode()
       self.ReferenceToRas.SetName("ReferenceToRas")
       slicer.mrmlScene.AddNode(self.ReferenceToRas)
-
+          
+    self.StylusToReference = slicer.util.getFirstNodeByName('StylusToReference', className='vtkMRMLLinearTransformNode')
+    if not self.StylusToReference:
+      self.StylusToReference=slicer.vtkMRMLLinearTransformNode()
+      self.StylusToReference.SetName("StylusToReference")
+      slicer.mrmlScene.AddNode(self.StylusToReference)
+      
     self.NeedleToReference = slicer.util.getFirstNodeByName('NeedleToReference', className='vtkMRMLLinearTransformNode')
     if not self.NeedleToReference:
       self.NeedleToReference=slicer.vtkMRMLLinearTransformNode()
       self.NeedleToReference.SetName("NeedleToReference")
       slicer.mrmlScene.AddNode(self.NeedleToReference)
 
+
     # Build Transform Tree
+    self.StylusToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
+    self.StylusTipToStylus.SetAndObserveTransformNodeID(self.StylusToReference.GetID())
+    self.StylusModel_StylusTip.SetAndObserveTransformNodeID(self.StylusTipToStylus.GetID())
+    self.StylusBaseToStylus.SetAndObserveTransformNodeID(self.StylusToReference.GetID())
     self.NeedleToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
     self.NeedleTipToNeedle.SetAndObserveTransformNodeID(self.NeedleToReference.GetID())
-    self.needleModel_NeedleTip.SetAndObserveTransformNodeID(self.NeedleTipToNeedle.GetID())
+    self.NeedleModel_NeedleTip.SetAndObserveTransformNodeID(self.NeedleTipToNeedle.GetID())
+    self.NeedleBaseToNeedle.SetAndObserveTransformNodeID(self.NeedleToReference.GetID())
 
 
   def cleanup(self):
@@ -138,6 +207,8 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
 
 
   def setupCustomViews(self):
+    logging.debug('setupCustomViews')
+  
     RGBO3DLayout = (
       "<layout type=\"vertical\" split=\"true\" >"
       " <item splitSize=\"500\">"
@@ -194,6 +265,8 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
 
 
   def onSaveScene(self):
+    logging.debug('onSaveScene')
+    
     if (self.ui.savePath.currentPath):
       savePath = self.ui.savePath.currentPath
       sceneSaveFilename = savePath + "/LiverBiopsy_NRTUS-saved-scene-" + time.strftime("%Y%m%d-%H%M%S") + ".mrb"
@@ -204,12 +277,14 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
       else:
         logging.error("Scene saving failed") 
       
-      print("saved")
+      print("Scene saved")
     else:
       print("Invalid Input Value")
 
 
   def onChangeLayout(self):
+    logging.debug('onChangeLayout')
+    
     view = self.ui.layoutComboBox.currentText
     print(view)
     
@@ -226,103 +301,186 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     layoutManager.setLayout(requestedID)  
 
 
-  def onSpinCalibration(self):
-    logging.debug('onSpinCalibration')
+  def stylusPivotCalibration(self):
+    logging.debug('stylusPivotCalibration')
     
-    self.needleCalibrationMode = self.SPIN_CALIBRATION
-    self.needleCalibrationStart()
+    self.toolCalibrationMode = self.PIVOT_CALIBRATION
+    
+    self.stylusCalibration()
 
 
-  def onPivotCalibration(self):
-    logging.debug('onPivotCalibration')
+  def stylusSpinCalibration(self):
+    logging.debug('needleSpinCalibration')
     
-    self.needleCalibrationMode = self.PIVOT_CALIBRATION
-    self.needleCalibrationStart()
+    self.toolCalibrationMode = self.SPIN_CALIBRATION
+    
+    self.stylusCalibration()
 
 
-  def needleCalibrationStart(self):
-    logging.debug('needleCalibrationStart')
+  def stylusCalibration(self):
+    logging.debug('stylusCalibration')
     
-    self.ui.pivotCalibrationButton.setEnabled(False)
-    self.ui.spinCalibrationButton.setEnabled(False)
+    self.toolCalibrationResultNode = self.StylusTipToStylus
+    self.toolCalibrationResultName = 'StylusTipToStylus'
+    self.toolToReferenceNode = self.StylusToReference
+    self.toolToReferenceTransformName = 'StylusToReference'
+    self.toolBeingCalibrated = 'Stylus'
+    self.toolCalibrationToolBaseNode = self.StylusBaseToStylus
+    self.toolCalibrationModel = self.StylusModel_StylusTip
     
-    self.needleCalibrationResultNode = self.NeedleTipToNeedle
-    self.needleCalibrationResultName = 'NeedleTipToNeedle'
+    self.toolCalibrationStart()
+
+
+  def needleSpinCalibration(self):
+    logging.debug('needleSpinCalibration')
     
-    self.pivotCalibrationLogic.SetAndObserveTransformNode(self.NeedleToReference)
+    self.toolCalibrationMode = self.SPIN_CALIBRATION
     
-    self.needleCalibrationStopTime = time.time()+float(5)
+    self.needleCalibration()
+
+
+  def needlePivotCalibration(self):
+    logging.debug('needlePivotCalibration')
+    
+    self.toolCalibrationMode = self.PIVOT_CALIBRATION
+    
+    self.needleCalibration()
+
+
+  def needleCalibration(self):
+    logging.debug('needleCalibration')
+    
+    self.toolCalibrationResultNode = self.NeedleTipToNeedle
+    self.toolCalibrationResultName = 'NeedleTipToNeedle'
+    self.toolToReferenceNode = self.NeedleToReference
+    self.toolToReferenceTransformName = 'NeedleToReference'
+    self.toolBeingCalibrated = 'Needle'
+    self.toolCalibrationToolBaseNode = self.NeedleBaseToNeedle
+    self.toolCalibrationModel = self.NeedleModel_NeedleTip
+    
+    self.toolCalibrationStart()
+
+
+  def toolCalibrationStart(self):
+    logging.debug('toolCalibrationStart')
+    
+    self.pivotCalibrationLogic.SetAndObserveTransformNode(self.toolToReferenceNode)
+    
+    self.ui.needlePivotCalibrationButton.setEnabled(False)
+    self.ui.needleSpinCalibrationButton.setEnabled(False)
+    self.ui.stylusPivotCalibrationButton.setEnabled(False)
+    self.ui.stylusSpinCalibrationButton.setEnabled(False)
+    
+    self.toolCalibrationStopTime = time.time()+float(5)
     self.pivotCalibrationLogic.SetRecordingState(True)
-    self.needleCalibrationTimeout()
+    self.toolCalibrationTimeout()
 
 
-  def needleCalibrationTimeout(self):
-    logging.debug('needleCalibrationTimeout')
+  def toolCalibrationTimeout(self):
+    logging.debug('toolCalibrationTimeout')
     
-    self.ui.calibrationErrorLabel.setText("")
-    self.ui.countdownLabel.setText("Calibrating for {0:.0f} more seconds".format(self.needleCalibrationStopTime - time.time()))
+    if self.toolBeingCalibrated == 'Needle':
+      self.ui.needleCalibrationErrorLabel.setText("")
+      self.ui.needleCalibrationCountdownLabel.setText("Calibrating for {0:.0f} more seconds".format(self.toolCalibrationStopTime - time.time()))
+    elif self.toolBeingCalibrated == 'Stylus':
+      self.ui.stylusCalibrationErrorLabel.setText("")
+      self.ui.stylusCalibrationCountdownLabel.setText("Calibrating for {0:.0f} more seconds".format(self.toolCalibrationStopTime - time.time()))
     
-    if(time.time()<self.needleCalibrationStopTime):
+    if(time.time()<self.toolCalibrationStopTime):
       # continue if calibration time isn't finished
-      self.ui.needleCalibrationSamplingTimer.start()
+      self.toolCalibrationTimer.start()
     else:
       # calibration completed
-      self.stopNeedleCalibration()
+      self.toolCalibrationStop()
 
 
-  def stopNeedleCalibration(self):
-    logging.debug('stopNeedleCalibration')
+  def toolCalibrationStop(self):
+    logging.debug('toolCalibrationStop')
     
-    self.ui.pivotCalibrationButton.setEnabled(True)
-    self.ui.spinCalibrationButton.setEnabled(True)
-    
-    if self.needleCalibrationMode == self.PIVOT_CALIBRATION:
+    self.ui.needlePivotCalibrationButton.setEnabled(True)
+    self.ui.needleSpinCalibrationButton.setEnabled(True)
+    self.ui.stylusPivotCalibrationButton.setEnabled(True)
+    self.ui.stylusSpinCalibrationButton.setEnabled(True)
+      
+    if self.toolCalibrationMode == self.PIVOT_CALIBRATION:
       calibrationSuccess = self.pivotCalibrationLogic.ComputePivotCalibration()
     else:
       calibrationSuccess = self.pivotCalibrationLogic.ComputeSpinCalibration()
       
     if not calibrationSuccess:
-      self.ui.countdownLabel.setText("Calibration failed: ")
-      self.ui.calibrationErrorLabel.setText(self.pivotCalibrationLogic.GetErrorText())
+      if self.toolBeingCalibrated == 'Needle':
+        self.ui.needleCalibrationCountdownLabel.setText("Calibration failed: ")
+        self.ui.needleCalibrationErrorLabel.setText(self.pivotCalibrationLogic.GetErrorText())
+      elif self.toolBeingCalibrated == 'Stylus':
+        self.ui.stylusCalibrationCountdownLabel.setText("Calibration failed: ")
+        self.ui.stylusCalibrationErrorLabel.setText(self.pivotCalibrationLogic.GetErrorText())
+        
       self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
       return
       
-    if self.needleCalibrationMode == self.PIVOT_CALIBRATION:
+    if self.toolCalibrationMode == self.PIVOT_CALIBRATION:
       if(self.pivotCalibrationLogic.GetPivotRMSE() >= float(self.calibrationErrorThresholdMm)):
-        self.ui.countdownLabel.setText("Pivot Calibration failed:")
-        self.ui.calibrationErrorLabel.setText("Error = {0:.2f} mm").format(self.pivotCalibrationLogic.GetPivotRMSE())
+        if self.toolBeingCalibrated == 'Needle':
+          self.ui.needleCalibrationCountdownLabel.setText("Pivot Calibration failed:")
+          self.ui.needleCalibrationErrorLabel.setText("Error = {0:.2f} mm").format(self.pivotCalibrationLogic.GetPivotRMSE())
+        elif self.toolBeingCalibrated == 'Stylus':
+          self.ui.stylusCalibrationCountdownLabel.setText("Pivot Calibration failed:")
+          self.ui.stylusCalibrationErrorLabel.setText("Error = {0:.2f} mm").format(self.pivotCalibrationLogic.GetPivotRMSE())
+          
         self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
         return
     else:
       if(self.pivotCalibrationLogic.GetSpinRMSE() >= float(self.calibrationErrorThresholdMm)):
-        self.ui.countdownLabel.setText("Spin calibration failed:")
-        self.ui.calibrationErrorLabel.setText("Error = {0:.2f} mm").format(self.pivotCalibrationLogic.GetSpinRMSE())
+        if self.toolBeingCalibrated == 'Needle':
+          self.ui.needleCalibrationCountdownLabel.setText("Spin calibration failed:")
+          self.ui.needleCalibrationErrorLabel.setText("Error = {0:.2f} mm").format(self.pivotCalibrationLogic.GetSpinRMSE())
+        elif self.toolBeingCalibrated == 'Stylus':
+          self.ui.stylusCalibrationCountdownLabel.setText("Spin calibration failed:")
+          self.ui.stylusCalibrationErrorLabel.setText("Error = {0:.2f} mm").format(self.pivotCalibrationLogic.GetSpinRMSE())
+          
         self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
         return
       
-    NeedleTipToNeedleMatrix = vtk.vtkMatrix4x4()
-    self.pivotCalibrationLogic.GetToolTipToToolMatrix(NeedleTipToNeedleMatrix)
+    toolTipToToolMatrix = vtk.vtkMatrix4x4()
+    self.pivotCalibrationLogic.GetToolTipToToolMatrix(toolTipToToolMatrix)
     self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
-    self.needleCalibrationResultNode.SetMatrixTransformToParent(NeedleTipToNeedleMatrix)
-    slicer.util.saveNode(self.needleCalibrationResultNode, os.path.join(self.moduleTransformsPath, self.needleCalibrationResultName + ".h5"))
+    self.toolCalibrationResultNode.SetMatrixTransformToParent(toolTipToToolMatrix)
+    slicer.util.saveNode(self.toolCalibrationResultNode, os.path.join(self.moduleTransformsPath, self.toolCalibrationResultName + ".h5"))
     
-    if self.needleCalibrationMode == self.PIVOT_CALIBRATION:
-      self.ui.countdownLabel.setText("Pivot calibration completed")
-      self.ui.calibrationErrorLabel.setText("Error = {0:.2f} mm".format(self.pivotCalibrationLogic.GetPivotRMSE()))
-      logging.debug("Pivot calibration completed. Tool: {0}. RMSE = {1:.2f} mm".format(self.needleCalibrationResultNode.GetName(), self.pivotCalibrationLogic.GetPivotRMSE()))
+    if self.toolCalibrationMode == self.PIVOT_CALIBRATION:
+      if self.toolBeingCalibrated == 'Needle':
+        self.ui.needleCalibrationCountdownLabel.setText("Pivot calibration completed")
+        self.ui.needleCalibrationErrorLabel.setText("Error = {0:.2f} mm".format(self.pivotCalibrationLogic.GetPivotRMSE()))
+      elif self.toolBeingCalibrated == 'Stylus':
+        self.ui.stylusCalibrationCountdownLabel.setText("Pivot calibration completed")
+        self.ui.stylusCalibrationErrorLabel.setText("Error = {0:.2f} mm".format(self.pivotCalibrationLogic.GetPivotRMSE()))
+        
+      self.updateDisplayedToolLength()
+      logging.debug("Pivot calibration completed. Tool: {0}. RMSE = {1:.2f} mm".format(self.toolCalibrationResultNode.GetName(), self.pivotCalibrationLogic.GetPivotRMSE()))
     else:
-      self.ui.countdownLabel.setText("Spin calibration completed.")
-      self.ui.calibrationErrorLabel.setText("Error = {0:.2f} mm".format(self.pivotCalibrationLogic.GetSpinRMSE()))
-      logging.debug("Spin calibration completed. Tool: {0}. RMSE = {1:.2f} mm".format(self.needleCalibrationResultNode.GetName(), self.pivotCalibrationLogic.GetSpinRMSE()))
-     
-    # Compute approximate needle length if we perform pivot calibration for the needle and update needle model
-    if self.needleCalibrationResultName == 'NeedleTipToNeedle':
-      self.updateDisplayedNeedleLength()
+      if self.toolBeingCalibrated == 'Needle':
+        self.ui.needleCalibrationCountdownLabel.setText("Spin calibration completed.")
+        self.ui.needleCalibrationErrorLabel.setText("Error = {0:.2f} mm".format(self.pivotCalibrationLogic.GetSpinRMSE()))
+      elif self.toolBeingCalibrated == 'Stylus':
+        self.ui.stylusCalibrationCountdownLabel.setText("Spin calibration completed.")
+        self.ui.stylusCalibrationErrorLabel.setText("Error = {0:.2f} mm".format(self.pivotCalibrationLogic.GetSpinRMSE()))
+        
+      logging.debug("Spin calibration completed. Tool: {0}. RMSE = {1:.2f} mm".format(self.toolCalibrationResultNode.GetName(), self.pivotCalibrationLogic.GetSpinRMSE()))
 
 
-  def updateDisplayedNeedleLength(self):
+  def updateDisplayedToolLength(self):
+    logging.debug("updateDisplayedToolLength")
+    
+    toolTipToToolBaseTransform = vtk.vtkMatrix4x4()
+    self.toolCalibrationResultNode.GetMatrixTransformToNode(self.toolCalibrationToolBaseNode, toolTipToToolBaseTransform)
+    toolLength = int(math.sqrt(toolTipToToolBaseTransform.GetElement(0,3)**2+toolTipToToolBaseTransform.GetElement(1,3)**2+toolTipToToolBaseTransform.GetElement(2,3)**2))
+    # Update the needle model
+    slicer.modules.createmodels.logic().CreateNeedle(toolLength,1.0, 1.5, False, self.toolCalibrationModel)
+
+
+  def saveTransforms(self):
     pass
-
+  
 
   def onTestFunction(self):
     pass 

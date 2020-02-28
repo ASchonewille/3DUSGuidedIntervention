@@ -48,61 +48,6 @@
     </widget>
    </item>
    <item row="1" column="0" colspan="2">
-    <widget class="ctkCollapsibleGroupBox" name="NeedleCalibration">
-     <property name="acceptDrops">
-      <bool>true</bool>
-     </property>
-     <property name="title">
-      <string>Needle Calibration</string>
-     </property>
-     <property name="collapsed">
-      <bool>false</bool>
-     </property>
-     <layout class="QFormLayout" name="formLayout_3">
-      <item row="1" column="1">
-       <widget class="QPushButton" name="spinCalibrationButton">
-        <property name="text">
-         <string>Start Spin Calibration</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QPushButton" name="pivotCalibrationButton">
-        <property name="text">
-         <string>Start Pivot Calibration</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QLabel" name="countdownLabel">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QLabel" name="calibrationErrorLabel">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="2" column="0" colspan="2">
     <widget class="ctkCollapsibleGroupBox" name="ProbeCalibration">
      <property name="enabled">
       <bool>true</bool>
@@ -141,53 +86,7 @@
      </layout>
     </widget>
    </item>
-   <item row="3" column="0" colspan="2">
-    <widget class="ctkCollapsibleGroupBox" name="PatientRegistration">
-     <property name="title">
-      <string>Patient Registration</string>
-     </property>
-     <property name="collapsed">
-      <bool>true</bool>
-     </property>
-     <layout class="QFormLayout" name="formLayout_11">
-      <item row="1" column="0" colspan="2">
-       <widget class="ctkCollapsibleGroupBox" name="CollapsibleGroupBox_3">
-        <property name="title">
-         <string>In-op Fiducials</string>
-        </property>
-        <layout class="QFormLayout" name="formLayout_9">
-         <item row="0" column="0" colspan="2">
-          <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget_3"/>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item row="2" column="0" colspan="2">
-       <widget class="ctkCollapsibleGroupBox" name="CollapsibleGroupBox_4">
-        <property name="title">
-         <string>Pre-op Fiducials</string>
-        </property>
-        <layout class="QFormLayout" name="formLayout_10">
-         <item row="0" column="0" colspan="2">
-          <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget_4"/>
-         </item>
-        </layout>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="4" column="0" colspan="2">
-    <widget class="ctkCollapsibleGroupBox" name="CTRegistration">
-     <property name="title">
-      <string>CT Registration</string>
-     </property>
-     <property name="collapsed">
-      <bool>false</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="0" colspan="2">
+   <item row="8" column="0" colspan="2">
     <widget class="ctkCollapsibleGroupBox" name="USCapture">
      <property name="title">
       <string>Save 3D US Volume</string>
@@ -197,7 +96,7 @@
      </property>
     </widget>
    </item>
-   <item row="6" column="0" colspan="2">
+   <item row="9" column="0" colspan="2">
     <widget class="ctkCollapsibleGroupBox" name="Navigation">
      <property name="title">
       <string>Navigation</string>
@@ -235,7 +134,7 @@
      </layout>
     </widget>
    </item>
-   <item row="7" column="0" colspan="2">
+   <item row="10" column="0" colspan="2">
     <widget class="ctkCollapsibleGroupBox" name="Settings">
      <property name="enabled">
       <bool>true</bool>
@@ -298,11 +197,155 @@
      </layout>
     </widget>
    </item>
-   <item row="8" column="0" colspan="2">
+   <item row="11" column="0" colspan="2">
     <widget class="QPushButton" name="testButton">
      <property name="text">
       <string>Test</string>
      </property>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="2">
+    <widget class="ctkCollapsibleGroupBox" name="NeedleCalibration">
+     <property name="acceptDrops">
+      <bool>true</bool>
+     </property>
+     <property name="title">
+      <string>Needle Calibration</string>
+     </property>
+     <property name="collapsed">
+      <bool>false</bool>
+     </property>
+     <layout class="QFormLayout" name="formLayout_3">
+      <item row="0" column="1">
+       <widget class="QPushButton" name="needlePivotCalibrationButton">
+        <property name="text">
+         <string>Start Pivot Calibration</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QPushButton" name="needleSpinCalibrationButton">
+        <property name="text">
+         <string>Start Spin Calibration</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLabel" name="needleCalibrationCountdownLabel">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLabel" name="needleCalibrationErrorLabel">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="5" column="0" colspan="2">
+    <widget class="ctkCollapsibleGroupBox" name="PatientRegistration">
+     <property name="title">
+      <string>Patient Registration</string>
+     </property>
+     <property name="collapsed">
+      <bool>true</bool>
+     </property>
+     <layout class="QFormLayout" name="formLayout_11">
+      <item row="1" column="0" colspan="2">
+       <widget class="ctkCollapsibleGroupBox" name="CollapsibleGroupBox_3">
+        <property name="title">
+         <string>In-op Fiducials</string>
+        </property>
+        <layout class="QFormLayout" name="formLayout_9">
+         <item row="0" column="0" colspan="2">
+          <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget_3"/>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
+       <widget class="ctkCollapsibleGroupBox" name="CollapsibleGroupBox_4">
+        <property name="title">
+         <string>Pre-op Fiducials</string>
+        </property>
+        <layout class="QFormLayout" name="formLayout_10">
+         <item row="0" column="0" colspan="2">
+          <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget_4"/>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="6" column="0" colspan="2">
+    <widget class="ctkCollapsibleGroupBox" name="CTRegistration">
+     <property name="title">
+      <string>CT Registration</string>
+     </property>
+     <property name="collapsed">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="2">
+    <widget class="ctkCollapsibleGroupBox" name="StylusCalibration">
+     <property name="title">
+      <string>Stylus Calibration</string>
+     </property>
+     <layout class="QFormLayout" name="formLayout_12">
+      <item row="1" column="1">
+       <widget class="QPushButton" name="stylusSpinCalibrationButton">
+        <property name="text">
+         <string>Start Spin Calibration</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QPushButton" name="stylusPivotCalibrationButton">
+        <property name="text">
+         <string>Start Pivot Calibration</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLabel" name="stylusCalibrationCountdownLabel">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLabel" name="stylusCalibrationErrorLabel">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
   </layout>
