@@ -49,7 +49,14 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     self.calibrationErrorThresholdMm = 0.9
     
     logic = LiverBiopsy_NRTUSLogic()
-    logic.setupTransforms()
+    
+    
+    # Set up slicer scene
+    self.setupScene()
+    
+    self.ui.fromCTFiducialWidget.setMRMLScene(slicer.mrmlScene)
+    self.ui.toReferenceFiducialWidget.setMRMLScene(slicer.mrmlScene)
+    self.ui.placeToCTFiducialTransform.setMRMLScene(slicer.mrmlScene)
 
     # connections
     self.ui.saveButton.connect('clicked(bool)', self.onSaveScene)
@@ -59,19 +66,35 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     self.ui.needlePivotCalibrationButton.connect('clicked(bool)', self.needlePivotCalibration)
     self.ui.stylusSpinCalibrationButton.connect('clicked(bool)', self.stylusSpinCalibration)
     self.ui.stylusPivotCalibrationButton.connect('clicked(bool)', self.stylusPivotCalibration)
+    self.ui.initialCTRegistrationButton.connect('clicked(bool)', self.initialCTRegistration)
+    self.ui.placeToReferenceFiducialButton.connect('clicked(bool)', self.placeToReferenceFiducial)
     
     self.toolCalibrationTimer = qt.QTimer()
     self.toolCalibrationTimer.setInterval(500)
     self.toolCalibrationTimer.setSingleShot(True)
     self.toolCalibrationTimer.connect('timeout()', self.toolCalibrationTimeout)
     
+    self.ui.fromCTFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('FromCTFiducials', className='vtkMRMLMarkupsFiducialNode'))
+    self.ui.fromCTFiducialWidget.setNodeColor(qt.QColor(85,255,0,255))
+    self.ui.toReferenceFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('ToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode'))
+    self.ui.toReferenceFiducialWidget.setNodeColor(qt.QColor(255,170,0,255))
+    
+    self.ui.placeToCTFiducialTransform.setCurrentNode(slicer.util.getFirstNodeByName('StylusTipToStylus', className='vtkMRMLLinearTransformNode'))
+    
+    
+    self.initialCTRegistrationFiducialRegistrationWizard.SetAndObserveFromFiducialListNodeId(self.ui.fromCTFiducialWidget.currentNode().GetID())
+    print(self.ui.fromCTFiducialWidget.currentNode().GetID())
+    print(self.ui.fromCTFiducialWidget.currentNode())
+    
+    self.initialCTRegistrationFiducialRegistrationWizard.SetAndObserveToFiducialListNodeId(self.ui.toReferenceFiducialWidget.currentNode().GetID())
+    self.initialCTRegistrationFiducialRegistrationWizard.SetOutputTransformNodeId(self.CTToReference.GetID())
+    
+    print(self.initialCTRegistrationFiducialRegistrationWizard.GetToFiducialListNode())
+    
     self.ui.testButton.connect('clicked(bool)', self.onTestFunction)
-
+    
     # Add vertical spacer
     self.layout.addStretch(1)
-    
-    # Set up slicer scene
-    self.setupScene()
 
 
   def setupScene(self):
@@ -84,6 +107,9 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     self.toolCalibrationMode = self.PIVOT_CALIBRATION
     
     self.pivotCalibrationLogic = slicer.modules.pivotcalibration.logic()
+    self.fiducialRegistrationLogic = slicer.modules.fiducialregistrationwizard.logic()
+    
+    print(self.fiducialRegistrationLogic)
   
     # Models
     self.StylusModel_StylusTip = slicer.util.getFirstNodeByName('StylusModel','vtkMRMLModelNode')
@@ -167,17 +193,35 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
           logging.debug('Failed: Creation of NeedleBaseToNeedle transform')
         else:
           logging.debug('Creation of NeedleBaseToNeedle transform')
-
-    # OpenIGTLink transforms
+          
+    #Setup CT Transforms
+    
+    self.CTToReference = slicer.util.getFirstNodeByName('CTToReference', className='vtkMRMLLinearTransformNode')
+    if not self.CTToReference:
+      CTToReferenceFilePath = os.path.join(self.moduleTransformsPath, 'CTToReference.h5')
+      [success, self.CTToReference] = slicer.util.loadTransform(CTToReferenceFilePath, returnNode = True)
+      if success == True:
+        self.CTToReference.SetName("CTToReference")
+        slicer.mrmlScene.AddNode(self.CTToReference)
+      else:
+        logging.debug('Could not load CTToReference from file')
+        self.CTToReference = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'CTToReference')
+        if not self.CTToReference:
+          logging.debug('Failed: Creation of CTToReference transform')
+        else:
+          logging.debug('Creation of CTToReference transform')
 
     # Set up ReferenceToRas
-    # TODO confirm with tracking
+    # TODO confirm
     self.ReferenceToRas = slicer.util.getFirstNodeByName('ReferenceToRas', className='vtkMRMLLinearTransformNode')
     if not self.ReferenceToRas:
       self.ReferenceToRas=slicer.vtkMRMLLinearTransformNode()
       self.ReferenceToRas.SetName("ReferenceToRas")
       slicer.mrmlScene.AddNode(self.ReferenceToRas)
           
+          
+    # OpenIGTLink transforms
+    
     self.StylusToReference = slicer.util.getFirstNodeByName('StylusToReference', className='vtkMRMLLinearTransformNode')
     if not self.StylusToReference:
       self.StylusToReference=slicer.vtkMRMLLinearTransformNode()
@@ -200,6 +244,26 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     self.NeedleTipToNeedle.SetAndObserveTransformNodeID(self.NeedleToReference.GetID())
     self.NeedleModel_NeedleTip.SetAndObserveTransformNodeID(self.NeedleTipToNeedle.GetID())
     self.NeedleBaseToNeedle.SetAndObserveTransformNodeID(self.NeedleToReference.GetID())
+    
+    
+    # Markups Nodes
+    self.FromCTFiducialNode = slicer.util.getFirstNodeByName('FromCTFiducials', className='vtkMRMLMarkupsFiducialNode')
+    if not self.FromCTFiducialNode:
+      self.FromCTFiducialNode = slicer.vtkMRMLMarkupsFiducialNode()
+      self.FromCTFiducialNode.SetName('FromCTFiducials')
+      slicer.mrmlScene.AddNode(self.FromCTFiducialNode)
+      
+    self.ToReferenceFiducialNode = slicer.util.getFirstNodeByName('ToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode')
+    if not self.ToReferenceFiducialNode:
+      self.ToReferenceFiducialNode = slicer.vtkMRMLMarkupsFiducialNode()
+      self.ToReferenceFiducialNode.SetName('ToReferenceFiducials')
+      slicer.mrmlScene.AddNode(self.ToReferenceFiducialNode)
+    
+    
+    # Fiducial Registration Wizard Set up
+    
+    # Patient Registration
+    self.initialCTRegistrationFiducialRegistrationWizard = slicer.vtkMRMLFiducialRegistrationWizardNode()
 
 
   def cleanup(self):
@@ -477,13 +541,24 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     # Update the needle model
     slicer.modules.createmodels.logic().CreateNeedle(toolLength,1.0, 1.5, False, self.toolCalibrationModel)
 
+  def placeToReferenceFiducial(self):
+    pass
+
+  def initialCTRegistration(self):
+    print(self.initialCTRegistrationFiducialRegistrationWizard)
+    success = self.fiducialRegistrationLogic.UpdateCalibration(self.initialCTRegistrationFiducialRegistrationWizard)
+    print(self.initialCTRegistrationFiducialRegistrationWizard.GetFromFiducialListNode())
+    print(self.initialCTRegistrationFiducialRegistrationWizard.GetCalibrationStatusMessage())
+
 
   def saveTransforms(self):
-    pass
-  
+    slicer.util.saveNode(self.StylusTipToStylus, os.path.join(self.moduleTransformsPath, 'StylusTipToStylus' + ".h5"))
+    slicer.util.saveNode(self.NeedleTipToNeedle, os.path.join(self.moduleTransformsPath, 'NeedleTipToNeedle' + ".h5"))
+    slicer.util.saveNode(self.ReferenceToRas, os.path.join(self.moduleTransformsPath, 'ReferenceToRas' + ".h5"))
+    slicer.util.saveNode(self.CTToReference, os.path.join(self.moduleTransformsPath, 'CTToReference' + ".h5"))
 
   def onTestFunction(self):
-    pass 
+    pass
 
 #
 # LiverBiopsy_NRTUSLogic
