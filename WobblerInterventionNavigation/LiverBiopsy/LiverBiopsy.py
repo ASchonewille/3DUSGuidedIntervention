@@ -5,17 +5,17 @@ from slicer.ScriptedLoadableModule import *
 import logging
 
 #
-# LiverBiopsy_NRTUS
+# LiverBiopsy
 #
 
-class LiverBiopsy_NRTUS(ScriptedLoadableModule):
+class LiverBiopsy(ScriptedLoadableModule):
   """Uses ScriptedLoadableModule base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
 
   def __init__(self, parent):
     ScriptedLoadableModule.__init__(self, parent)
-    self.parent.title = "LiverBiopsy_NRTUS" # TODO make this more human readable by adding spaces
+    self.parent.title = "LiverBiopsy" # TODO make this more human readable by adding spaces
     self.parent.categories = ["US guided intervention"]
     self.parent.dependencies = []
     self.parent.contributors = ["Abigael Schonewille (PerkLab)"] 
@@ -27,10 +27,10 @@ This is a module designed to be the framework for percutaneous interventions of 
 """ # replace with organization, grant and thanks.
 
 #
-# LiverBiopsy_NRTUSWidget
+# LiverBiopsyWidget
 #
 
-class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
+class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
   """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
@@ -39,7 +39,7 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     ScriptedLoadableModuleWidget.setup(self)
 
     # Load widget from .ui file (created by Qt Designer)
-    uiWidget = slicer.util.loadUI(self.resourcePath('UI/LiverBiopsy_NRTUS.ui'))
+    uiWidget = slicer.util.loadUI(self.resourcePath('UI/LiverBiopsy.ui'))
     self.layout.addWidget(uiWidget)
     self.ui = slicer.util.childWidgetVariables(uiWidget)
     
@@ -48,7 +48,7 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     
     self.calibrationErrorThresholdMm = 0.9
     
-    logic = LiverBiopsy_NRTUSLogic()
+    self.logic = LiverBiopsyLogic()
     
     
     # Set up slicer scene
@@ -56,7 +56,6 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     
     self.ui.fromCTFiducialWidget.setMRMLScene(slicer.mrmlScene)
     self.ui.toReferenceFiducialWidget.setMRMLScene(slicer.mrmlScene)
-    self.ui.placeToCTFiducialTransform.setMRMLScene(slicer.mrmlScene)
 
     # connections
     self.ui.saveButton.connect('clicked(bool)', self.onSaveScene)
@@ -79,37 +78,26 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     self.ui.toReferenceFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('ToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode'))
     self.ui.toReferenceFiducialWidget.setNodeColor(qt.QColor(255,170,0,255))
     
-    self.ui.placeToCTFiducialTransform.setCurrentNode(slicer.util.getFirstNodeByName('StylusTipToStylus', className='vtkMRMLLinearTransformNode'))
-    
-    
-    self.initialCTRegistrationFiducialRegistrationWizard.SetAndObserveFromFiducialListNodeId(self.ui.fromCTFiducialWidget.currentNode().GetID())
-    print(self.ui.fromCTFiducialWidget.currentNode().GetID())
-    print(self.ui.fromCTFiducialWidget.currentNode())
-    
-    self.initialCTRegistrationFiducialRegistrationWizard.SetAndObserveToFiducialListNodeId(self.ui.toReferenceFiducialWidget.currentNode().GetID())
-    self.initialCTRegistrationFiducialRegistrationWizard.SetOutputTransformNodeId(self.CTToReference.GetID())
-    
-    print(self.initialCTRegistrationFiducialRegistrationWizard.GetToFiducialListNode())
-    
     self.ui.testButton.connect('clicked(bool)', self.onTestFunction)
     
     # Add vertical spacer
     self.layout.addStretch(1)
+    
+    # Setup Fiducial Registration Wizards
+    self.setupFiducialRegistrationWizard()
 
 
   def setupScene(self):
     self.PIVOT_CALIBRATION = 0
     self.SPIN_CALIBRATION = 1
     
-    self.modulePath = os.path.dirname(slicer.modules.liverbiopsy_nrtus.path)
+    self.modulePath = os.path.dirname(slicer.modules.liverbiopsy.path)
     self.moduleTransformsPath = os.path.join(self.modulePath, 'Resources/Transforms')
     
     self.toolCalibrationMode = self.PIVOT_CALIBRATION
     
     self.pivotCalibrationLogic = slicer.modules.pivotcalibration.logic()
     self.fiducialRegistrationLogic = slicer.modules.fiducialregistrationwizard.logic()
-    
-    print(self.fiducialRegistrationLogic)
   
     # Models
     self.StylusModel_StylusTip = slicer.util.getFirstNodeByName('StylusModel','vtkMRMLModelNode')
@@ -258,12 +246,18 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
       self.ToReferenceFiducialNode = slicer.vtkMRMLMarkupsFiducialNode()
       self.ToReferenceFiducialNode.SetName('ToReferenceFiducials')
       slicer.mrmlScene.AddNode(self.ToReferenceFiducialNode)
-    
-    
+
+
+  def setupFiducialRegistrationWizard(self):
     # Fiducial Registration Wizard Set up
     
     # Patient Registration
-    self.initialCTRegistrationFiducialRegistrationWizard = slicer.vtkMRMLFiducialRegistrationWizardNode()
+    self.initialCTRegistrationFiducialRegistrationWizard = slicer.vtkMRMLFiducialRegistrationWizardNode().NewInstance()
+    self.initialCTRegistrationFiducialRegistrationWizard.SetAndObserveFromFiducialListNodeId(self.ui.fromCTFiducialWidget.currentNode().GetID())
+    self.initialCTRegistrationFiducialRegistrationWizard.SetAndObserveToFiducialListNodeId(self.ui.toReferenceFiducialWidget.currentNode().GetID())
+    self.initialCTRegistrationFiducialRegistrationWizard.SetProbeTransformToNodeId(self.StylusTipToStylus.GetID())
+    self.initialCTRegistrationFiducialRegistrationWizard.SetOutputTransformNodeId(self.CTToReference.GetID())
+    
 
 
   def cleanup(self):
@@ -333,7 +327,7 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     
     if (self.ui.savePath.currentPath):
       savePath = self.ui.savePath.currentPath
-      sceneSaveFilename = savePath + "/LiverBiopsy_NRTUS-saved-scene-" + time.strftime("%Y%m%d-%H%M%S") + ".mrb"
+      sceneSaveFilename = savePath + "/LiverBiopsy-saved-scene-" + time.strftime("%Y%m%d-%H%M%S") + ".mrb"
 
       # Save scene
       if slicer.util.saveScene(sceneSaveFilename):
@@ -541,30 +535,51 @@ class LiverBiopsy_NRTUSWidget(ScriptedLoadableModuleWidget):
     # Update the needle model
     slicer.modules.createmodels.logic().CreateNeedle(toolLength,1.0, 1.5, False, self.toolCalibrationModel)
 
+
   def placeToReferenceFiducial(self):
-    pass
+    logging.debug("placeToReferenceFiducial")
+    
+    self.fiducialRegistrationLogic.GetMarkupsLogic().SetActiveListID(self.ui.toReferenceFiducialWidget.currentNode())
+    self.fiducialRegistrationLogic.AddFiducial(self.initialCTRegistrationFiducialRegistrationWizard.GetProbeTransformToNode())
+
 
   def initialCTRegistration(self):
-    print(self.initialCTRegistrationFiducialRegistrationWizard)
-    success = self.fiducialRegistrationLogic.UpdateCalibration(self.initialCTRegistrationFiducialRegistrationWizard)
-    print(self.initialCTRegistrationFiducialRegistrationWizard.GetFromFiducialListNode())
-    print(self.initialCTRegistrationFiducialRegistrationWizard.GetCalibrationStatusMessage())
+    logging.debug("initialCTRegistration")
+    
+    success = self.fiducialRegistrationLogic.UpdateCalibration(slicer.vtkMRMLFiducialRegistrationWizardNode().SafeDownCast(self.initialCTRegistrationFiducialRegistrationWizard))
+    self.ui.initialCTRegistrationErrorLabel.setText(self.initialCTRegistrationFiducialRegistrationWizard.GetCalibrationStatusMessage())
 
 
   def saveTransforms(self):
+    logging.debug("saveTransforms")
+    
     slicer.util.saveNode(self.StylusTipToStylus, os.path.join(self.moduleTransformsPath, 'StylusTipToStylus' + ".h5"))
     slicer.util.saveNode(self.NeedleTipToNeedle, os.path.join(self.moduleTransformsPath, 'NeedleTipToNeedle' + ".h5"))
     slicer.util.saveNode(self.ReferenceToRas, os.path.join(self.moduleTransformsPath, 'ReferenceToRas' + ".h5"))
     slicer.util.saveNode(self.CTToReference, os.path.join(self.moduleTransformsPath, 'CTToReference' + ".h5"))
 
+
   def onTestFunction(self):
-    pass
+    if(self.initialCTRegistration):
+      print("True")
+  
+  
+    print(self.initialCTRegistrationFiducialRegistrationWizard)
+    print(self.initialCTRegistrationFiducialRegistrationWizard.GetFromFiducialListNode())
+    
+    print(self.initialCTRegistrationFiducialRegistrationWizard.GetNodeReference("ToFiducialList"))
+    
+    print(slicer.mrmlScene.GetReferencedNodes(self.initialCTRegistrationFiducialRegistrationWizard))
+    print(self.fiducialRegistrationLogic)
+    
+    print("End Test")
+
 
 #
-# LiverBiopsy_NRTUSLogic
+# LiverBiopsyLogic
 #
 
-class LiverBiopsy_NRTUSLogic(ScriptedLoadableModuleLogic):
+class LiverBiopsyLogic(ScriptedLoadableModuleLogic):
   """This class should implement all the actual
   computation done by your module.  The interface
   should be such that other python code can import
@@ -579,7 +594,7 @@ class LiverBiopsy_NRTUSLogic(ScriptedLoadableModuleLogic):
  
 
 
-class LiverBiopsy_NRTUSTest(ScriptedLoadableModuleTest):
+class LiverBiopsyTest(ScriptedLoadableModuleTest):
   """
   This is the test case for your scripted module.
   Uses ScriptedLoadableModuleTest base class, available at:
@@ -596,10 +611,10 @@ class LiverBiopsy_NRTUSTest(ScriptedLoadableModuleTest):
     """Run as few or as many tests as needed here.
     """
     self.setUp()
-    self.test_LiverBiopsy_NRTUS1()
+    self.test_LiverBiopsy1()
 
 
-  def test_LiverBiopsy_NRTUS1(self):
+  def test_LiverBiopsy1(self):
     """ Ideally you should have several levels of tests.  At the lowest level
     tests should exercise the functionality of the logic with different inputs
     (both valid and invalid).  At higher levels your tests should emulate the

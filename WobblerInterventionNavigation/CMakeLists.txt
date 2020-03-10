@@ -21,7 +21,7 @@ include(${Slicer_USE_FILE})
 # Extension modules
 add_subdirectory(LiverBiopsy)
 add_subdirectory(LiverBiopsy)
-add_subdirectory(LiverBiopsy_NRTUS)
+add_subdirectory(LiverBiopsy)
 ## NEXT_MODULE
 
 #-----------------------------------------------------------------------------

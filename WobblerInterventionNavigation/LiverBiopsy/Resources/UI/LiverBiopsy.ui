@@ -249,24 +249,9 @@
           </widget>
          </item>
          <item row="1" column="0" colspan="2">
-          <widget class="qMRMLNodeComboBox" name="placeToCTFiducialTransform">
-           <property name="enabled">
-            <bool>true</bool>
-           </property>
-           <property name="nodeTypes">
-            <stringlist>
-             <string>vtkMRMLLinearTransformNode</string>
-            </stringlist>
-           </property>
-           <property name="renameEnabled">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0" colspan="2">
           <widget class="QPushButton" name="placeToReferenceFiducialButton">
            <property name="text">
-            <string>Place Fiducial</string>
+            <string>Place Fiducial Using Stylus</string>
            </property>
           </widget>
          </item>
@@ -434,11 +419,6 @@
    <class>ctkPathLineEdit</class>
    <extends>QWidget</extends>
    <header>ctkPathLineEdit.h</header>
-  </customwidget>
-  <customwidget>
-   <class>qMRMLNodeComboBox</class>
-   <extends>QWidget</extends>
-   <header>qMRMLNodeComboBox.h</header>
   </customwidget>
   <customwidget>
    <class>qSlicerWidget</class>
