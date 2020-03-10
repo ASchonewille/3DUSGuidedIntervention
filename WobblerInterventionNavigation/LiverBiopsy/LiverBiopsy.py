@@ -15,7 +15,7 @@ class LiverBiopsy(ScriptedLoadableModule):
 
   def __init__(self, parent):
     ScriptedLoadableModule.__init__(self, parent)
-    self.parent.title = "LiverBiopsy" # TODO make this more human readable by adding spaces
+    self.parent.title = "LiverBiopsy"
     self.parent.categories = ["US guided intervention"]
     self.parent.dependencies = []
     self.parent.contributors = ["Abigael Schonewille (PerkLab)"] 

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>352</width>
-    <height>827</height>
+    <height>941</height>
    </rect>
   </property>
   <property name="acceptDrops">
@@ -56,7 +56,7 @@
       <string>Probe Calibration</string>
      </property>
      <property name="collapsed">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <layout class="QFormLayout" name="formLayout_6">
       <item row="0" column="0" colspan="2">
@@ -66,7 +66,11 @@
         </property>
         <layout class="QFormLayout" name="formLayout_7">
          <item row="0" column="0" colspan="2">
-          <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget"/>
+          <widget class="qSlicerSimpleMarkupsWidget" name="from3DUSVolumeFiducialWidget">
+           <property name="nodeSelectorVisible">
+            <bool>false</bool>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -74,13 +78,31 @@
       <item row="1" column="0" colspan="2">
        <widget class="ctkCollapsibleGroupBox" name="CollapsibleGroupBox_2">
         <property name="title">
-         <string>Probe Fiducials</string>
+         <string>Reference Fiducials</string>
         </property>
         <layout class="QFormLayout" name="formLayout_8">
          <item row="0" column="0" colspan="2">
-          <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget_2"/>
+          <widget class="qSlicerSimpleMarkupsWidget" name="toProbeFiducialWidget">
+           <property name="nodeSelectorVisible">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" colspan="2">
+          <widget class="QPushButton" name="placeToProbeFiducialButton">
+           <property name="text">
+            <string>Place Fiducial Using Stylus</string>
+           </property>
+          </widget>
          </item>
         </layout>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
+       <widget class="QPushButton" name="calibrate3DUSProbe">
+        <property name="text">
+         <string>Start Calibration</string>
+        </property>
        </widget>
       </item>
      </layout>
