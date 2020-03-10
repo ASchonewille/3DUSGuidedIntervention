@@ -82,9 +82,6 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     
     # Add vertical spacer
     self.layout.addStretch(1)
-    
-    # Setup Fiducial Registration Wizards
-    self.setupFiducialRegistrationWizard()
 
 
   def setupScene(self):
@@ -97,7 +94,6 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     self.toolCalibrationMode = self.PIVOT_CALIBRATION
     
     self.pivotCalibrationLogic = slicer.modules.pivotcalibration.logic()
-    self.fiducialRegistrationLogic = slicer.modules.fiducialregistrationwizard.logic()
   
     # Models
     self.StylusModel_StylusTip = slicer.util.getFirstNodeByName('StylusModel','vtkMRMLModelNode')
@@ -246,18 +242,6 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
       self.ToReferenceFiducialNode = slicer.vtkMRMLMarkupsFiducialNode()
       self.ToReferenceFiducialNode.SetName('ToReferenceFiducials')
       slicer.mrmlScene.AddNode(self.ToReferenceFiducialNode)
-
-
-  def setupFiducialRegistrationWizard(self):
-    # Fiducial Registration Wizard Set up
-    
-    # Patient Registration
-    self.initialCTRegistrationFiducialRegistrationWizard = slicer.vtkMRMLFiducialRegistrationWizardNode().NewInstance()
-    self.initialCTRegistrationFiducialRegistrationWizard.SetAndObserveFromFiducialListNodeId(self.ui.fromCTFiducialWidget.currentNode().GetID())
-    self.initialCTRegistrationFiducialRegistrationWizard.SetAndObserveToFiducialListNodeId(self.ui.toReferenceFiducialWidget.currentNode().GetID())
-    self.initialCTRegistrationFiducialRegistrationWizard.SetProbeTransformToNodeId(self.StylusTipToStylus.GetID())
-    self.initialCTRegistrationFiducialRegistrationWizard.SetOutputTransformNodeId(self.CTToReference.GetID())
-    
 
 
   def cleanup(self):
@@ -539,15 +523,16 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
   def placeToReferenceFiducial(self):
     logging.debug("placeToReferenceFiducial")
     
-    self.fiducialRegistrationLogic.GetMarkupsLogic().SetActiveListID(self.ui.toReferenceFiducialWidget.currentNode())
-    self.fiducialRegistrationLogic.AddFiducial(self.initialCTRegistrationFiducialRegistrationWizard.GetProbeTransformToNode())
+    #set active node
+    #figure out how to get the coords of the stylus tip, use lump nav as example
 
 
   def initialCTRegistration(self):
     logging.debug("initialCTRegistration")
     
-    success = self.fiducialRegistrationLogic.UpdateCalibration(slicer.vtkMRMLFiducialRegistrationWizardNode().SafeDownCast(self.initialCTRegistrationFiducialRegistrationWizard))
-    self.ui.initialCTRegistrationErrorLabel.setText(self.initialCTRegistrationFiducialRegistrationWizard.GetCalibrationStatusMessage())
+    calibrationMessage = landmarkRegistration() #take as input the two markups nodes that will be registered
+
+    self.ui.initialCTRegistrationErrorLabel.setText(calibrationMessage)
 
 
   def saveTransforms(self):
