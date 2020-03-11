@@ -94,6 +94,7 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     self.toolCalibrationMode = self.PIVOT_CALIBRATION
     
     self.pivotCalibrationLogic = slicer.modules.pivotcalibration.logic()
+    self.markupsLogic = slicer.modules.markups.logic()
   
     # Models
     self.StylusModel_StylusTip = slicer.util.getFirstNodeByName('StylusModel','vtkMRMLModelNode')
@@ -520,17 +521,34 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     slicer.modules.createmodels.logic().CreateNeedle(toolLength,1.0, 1.5, False, self.toolCalibrationModel)
 
 
+  def returnPointAtStylusTip(self): #Coordinate returned is in the reference coordinate system
+    logging.debug('returnPointAtStylusTip')
+  
+    currentStylusTipToStylus = vtk.vtkMatrix4x4()
+    self.StylusTipToStylus.GetMatrixTransformToNode(self.StylusToReference, currentStylusTipToStylus)
+    
+    return [currentStylusTipToStylus.GetElement(0,3), currentStylusTipToStylus.GetElement(1,3), currentStylusTipToStylus.GetElement(2,3)]
+
   def placeToReferenceFiducial(self):
     logging.debug("placeToReferenceFiducial")
     
-    #set active node
-    #figure out how to get the coords of the stylus tip, use lump nav as example
+    currentNode = self.ui.toReferenceFiducialWidget.currentNode()
+    print(currentNode)
+    
+    self.markupsLogic.SetActiveListID(currentNode)
+    newFiducial = self.returnPointAtStylusTip()
+    
+    currentNode.AddFiducialFromArray(newFiducial)
 
 
   def initialCTRegistration(self):
     logging.debug("initialCTRegistration")
     
-    calibrationMessage = landmarkRegistration() #take as input the two markups nodes that will be registered
+    fromMarkupsNode = self.ui.fromCTFiducialWidget.currentNode()
+    toMarkupsNode = self.ui.toReferenceFiducialWidget.currentNode()
+    outputTransformNode = self.CTToReference
+    
+    calibrationMessage = self.logic.landmarkRegistration(fromMarkupsNode, toMarkupsNode, outputTransformNode)
 
     self.ui.initialCTRegistrationErrorLabel.setText(calibrationMessage)
 
@@ -545,17 +563,6 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
 
 
   def onTestFunction(self):
-    if(self.initialCTRegistration):
-      print("True")
-  
-  
-    print(self.initialCTRegistrationFiducialRegistrationWizard)
-    print(self.initialCTRegistrationFiducialRegistrationWizard.GetFromFiducialListNode())
-    
-    print(self.initialCTRegistrationFiducialRegistrationWizard.GetNodeReference("ToFiducialList"))
-    
-    print(slicer.mrmlScene.GetReferencedNodes(self.initialCTRegistrationFiducialRegistrationWizard))
-    print(self.fiducialRegistrationLogic)
     
     print("End Test")
 
@@ -574,9 +581,44 @@ class LiverBiopsyLogic(ScriptedLoadableModuleLogic):
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
   
-  def setupTransforms(self):
-    pass    
- 
+  def landmarkRegistration(self, fromMarkupsNode, toMarkupsNode, outputTransformNode):
+    logging.debug('landmarkRegistration')
+    
+    fromPoints = vtk.vtkPoints()
+    toPoints = vtk.vtkPoints()
+
+    nFromPoints = fromMarkupsNode.GetNumberOfFiducials()
+    nToPoints = toMarkupsNode.GetNumberOfFiducials()
+    
+    if nFromPoints != nToPoints:
+      return 'Number of points in markups nodes are not equal'
+      
+    if nFromPoints < 3:
+      return 'Insufficient number of points in markups nodes'
+
+    for i in range( nFromPoints ):
+      p = [0, 0, 0]
+      fromMarkupsNode.GetNthFiducialPosition(i, p)
+      fromPoints.InsertNextPoint( p )
+      toMarkupsNode.GetNthFiducialPosition(i, p)
+      toPoints.InsertNextPoint( p )
+
+    lt = vtk.vtkLandmarkTransform()
+    lt.SetSourceLandmarks( fromPoints )
+    lt.SetTargetLandmarks( toPoints )
+    lt.SetModeToSimilarity()
+    lt.Update()
+
+    resultsMatrix = vtk.vtkMatrix4x4()
+    lt.GetMatrix( resultsMatrix )
+
+    det = resultsMatrix.Determinant()
+    if det < 1e-8:
+      return 'Unstable registration. Check input for collinear points'
+      
+    outputTransformNode.SetMatrixTransformToParent(resultsMatrix)
+    
+    return "Success" 
 
 
 class LiverBiopsyTest(ScriptedLoadableModuleTest):
