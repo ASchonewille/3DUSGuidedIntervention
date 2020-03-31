@@ -523,17 +523,16 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
 
   def returnPointAtStylusTip(self): #Coordinate returned is in the reference coordinate system
     logging.debug('returnPointAtStylusTip')
-  
-    currentStylusTipToStylus = vtk.vtkMatrix4x4()
-    self.StylusTipToStylus.GetMatrixTransformToNode(self.StylusToReference, currentStylusTipToStylus)
-    
-    return [currentStylusTipToStylus.GetElement(0,3), currentStylusTipToStylus.GetElement(1,3), currentStylusTipToStylus.GetElement(2,3)]
+    StylusTipToReference = vtk.vtkMatrix4x4()
+
+    self.StylusTipToStylus.GetMatrixTransformToNode(self.StylusToReference, StylusTipToReference)
+    print(self.StylusToReference)
+    return [StylusTipToReference.GetElement(0,3), StylusTipToReference.GetElement(1,3), StylusTipToReference.GetElement(2,3)]
 
   def placeToReferenceFiducial(self):
     logging.debug("placeToReferenceFiducial")
     
     currentNode = self.ui.toReferenceFiducialWidget.currentNode()
-    print(currentNode)
     
     self.markupsLogic.SetActiveListID(currentNode)
     newFiducial = self.returnPointAtStylusTip()
