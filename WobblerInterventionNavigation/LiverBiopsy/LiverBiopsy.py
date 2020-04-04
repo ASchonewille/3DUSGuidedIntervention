@@ -54,8 +54,10 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     # Set up slicer scene
     self.setupScene()
     
-    self.ui.fromCTFiducialWidget.setMRMLScene(slicer.mrmlScene)
-    self.ui.toReferenceFiducialWidget.setMRMLScene(slicer.mrmlScene)
+    self.ui.fromUSToReferenceFiducialWidget.setMRMLScene(slicer.mrmlScene)
+    self.ui.toUSToReferenceFiducialWidget.setMRMLScene(slicer.mrmlScene)
+    self.ui.fromCTToReferenceFiducialWidget.setMRMLScene(slicer.mrmlScene)
+    self.ui.toCTToReferenceFiducialWidget.setMRMLScene(slicer.mrmlScene)
 
     # connections
     self.ui.saveButton.connect('clicked(bool)', self.onSaveScene)
@@ -65,18 +67,25 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     self.ui.needlePivotCalibrationButton.connect('clicked(bool)', self.needlePivotCalibration)
     self.ui.stylusSpinCalibrationButton.connect('clicked(bool)', self.stylusSpinCalibration)
     self.ui.stylusPivotCalibrationButton.connect('clicked(bool)', self.stylusPivotCalibration)
+    self.ui.USCalibrationButton.connect('clicked(bool)', self.USCalibration)
+    self.ui.placeToUSToReferenceFiducialButton.connect('clicked(bool)', self.placeToUSToReferenceFiducial)
     self.ui.initialCTRegistrationButton.connect('clicked(bool)', self.initialCTRegistration)
-    self.ui.placeToReferenceFiducialButton.connect('clicked(bool)', self.placeToReferenceFiducial)
+    self.ui.placeToCTToReferenceFiducialButton.connect('clicked(bool)', self.placeToCTToReferenceFiducial)
     
     self.toolCalibrationTimer = qt.QTimer()
     self.toolCalibrationTimer.setInterval(500)
     self.toolCalibrationTimer.setSingleShot(True)
     self.toolCalibrationTimer.connect('timeout()', self.toolCalibrationTimeout)
     
-    self.ui.fromCTFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('FromCTFiducials', className='vtkMRMLMarkupsFiducialNode'))
-    self.ui.fromCTFiducialWidget.setNodeColor(qt.QColor(85,255,0,255))
-    self.ui.toReferenceFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('ToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode'))
-    self.ui.toReferenceFiducialWidget.setNodeColor(qt.QColor(255,170,0,255))
+    self.ui.fromUSToReferenceFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('FromUSToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode'))
+    self.ui.fromUSToReferenceFiducialWidget.setNodeColor(qt.QColor(207,26,0,255))
+    self.ui.toUSToReferenceFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('ToUSToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode'))
+    self.ui.toUSToReferenceFiducialWidget.setNodeColor(qt.QColor(103,0,225,255))
+    
+    self.ui.fromCTToReferenceFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('FromCTToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode'))
+    self.ui.fromCTToReferenceFiducialWidget.setNodeColor(qt.QColor(85,255,0,255))
+    self.ui.toCTToReferenceFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('ToCTToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode'))
+    self.ui.toCTToReferenceFiducialWidget.setNodeColor(qt.QColor(255,170,0,255))
     
     self.ui.testButton.connect('clicked(bool)', self.onTestFunction)
     
@@ -229,20 +238,33 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     self.NeedleTipToNeedle.SetAndObserveTransformNodeID(self.NeedleToReference.GetID())
     self.NeedleModel_NeedleTip.SetAndObserveTransformNodeID(self.NeedleTipToNeedle.GetID())
     self.NeedleBaseToNeedle.SetAndObserveTransformNodeID(self.NeedleToReference.GetID())
+    self.CTToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
     
     
     # Markups Nodes
-    self.FromCTFiducialNode = slicer.util.getFirstNodeByName('FromCTFiducials', className='vtkMRMLMarkupsFiducialNode')
-    if not self.FromCTFiducialNode:
-      self.FromCTFiducialNode = slicer.vtkMRMLMarkupsFiducialNode()
-      self.FromCTFiducialNode.SetName('FromCTFiducials')
-      slicer.mrmlScene.AddNode(self.FromCTFiducialNode)
+    self.FromUSToReferenceFiducialNode = slicer.util.getFirstNodeByName('FromUSToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode')
+    if not self.FromUSToReferenceFiducialNode:
+      self.FromUSToReferenceFiducialNode = slicer.vtkMRMLMarkupsFiducialNode()
+      self.FromUSToReferenceFiducialNode.SetName('FromUSToReferenceFiducials')
+      slicer.mrmlScene.AddNode(self.FromUSToReferenceFiducialNode)
       
-    self.ToReferenceFiducialNode = slicer.util.getFirstNodeByName('ToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode')
-    if not self.ToReferenceFiducialNode:
-      self.ToReferenceFiducialNode = slicer.vtkMRMLMarkupsFiducialNode()
-      self.ToReferenceFiducialNode.SetName('ToReferenceFiducials')
-      slicer.mrmlScene.AddNode(self.ToReferenceFiducialNode)
+    self.ToUSToReferenceFiducialNode = slicer.util.getFirstNodeByName('ToUSToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode')
+    if not self.ToUSToReferenceFiducialNode:
+      self.ToUSToReferenceFiducialNode = slicer.vtkMRMLMarkupsFiducialNode()
+      self.ToUSToReferenceFiducialNode.SetName('ToUSToReferenceFiducials')
+      slicer.mrmlScene.AddNode(self.ToUSToReferenceFiducialNode)
+    
+    self.FromCTToReferenceFiducialNode = slicer.util.getFirstNodeByName('FromCTToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode')
+    if not self.FromCTToReferenceFiducialNode:
+      self.FromCTToReferenceFiducialNode = slicer.vtkMRMLMarkupsFiducialNode()
+      self.FromCTToReferenceFiducialNode.SetName('FromCTToReferenceFiducials')
+      slicer.mrmlScene.AddNode(self.FromCTToReferenceFiducialNode)
+      
+    self.ToCTToReferenceFiducialNode = slicer.util.getFirstNodeByName('ToCTToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode')
+    if not self.ToCTToReferenceFiducialNode:
+      self.ToCTToReferenceFiducialNode = slicer.vtkMRMLMarkupsFiducialNode()
+      self.ToCTToReferenceFiducialNode.SetName('ToCTToReferenceFiducials')
+      slicer.mrmlScene.AddNode(self.ToCTToReferenceFiducialNode)
 
 
   def cleanup(self):
@@ -525,14 +547,37 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     logging.debug('returnPointAtStylusTip')
     StylusTipToReference = vtk.vtkMatrix4x4()
 
-    self.StylusTipToStylus.GetMatrixTransformToNode(self.StylusToReference, StylusTipToReference)
-    print(self.StylusToReference)
+    self.StylusTipToStylus.GetMatrixTransformToWorld(StylusTipToReference)
     return [StylusTipToReference.GetElement(0,3), StylusTipToReference.GetElement(1,3), StylusTipToReference.GetElement(2,3)]
 
-  def placeToReferenceFiducial(self):
-    logging.debug("placeToReferenceFiducial")
+
+  def placeToUSToReferenceFiducial(self):
+    logging.debug("placeToUSToReferenceFiducial")
     
-    currentNode = self.ui.toReferenceFiducialWidget.currentNode()
+    currentNode = self.ui.toUSToReferenceFiducialWidget.currentNode()
+    
+    self.markupsLogic.SetActiveListID(currentNode)
+    newFiducial = self.returnPointAtStylusTip()
+    
+    currentNode.AddFiducialFromArray(newFiducial)
+
+
+  def USCalibration(self):
+    logging.debug("USCalibration")
+    
+    fromMarkupsNode = self.ui.fromUSToReferenceFiducialWidget.currentNode()
+    toMarkupsNode = self.ui.toUSToReferenceFiducialWidget.currentNode()
+    outputTransformNode = self.USToReference
+    
+    calibrationMessage, RMSE = self.logic.landmarkRegistration(fromMarkupsNode, toMarkupsNode, outputTransformNode)
+
+    self.ui.USCalibrationErrorLabel.setText(calibrationMessage.format(RMSE))
+
+
+  def placeToCTToReferenceFiducial(self):
+    logging.debug("placeToCTToReferenceFiducial")
+    
+    currentNode = self.ui.toCTToReferenceFiducialWidget.currentNode()
     
     self.markupsLogic.SetActiveListID(currentNode)
     newFiducial = self.returnPointAtStylusTip()
@@ -543,13 +588,13 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
   def initialCTRegistration(self):
     logging.debug("initialCTRegistration")
     
-    fromMarkupsNode = self.ui.fromCTFiducialWidget.currentNode()
-    toMarkupsNode = self.ui.toReferenceFiducialWidget.currentNode()
+    fromMarkupsNode = self.ui.fromCTToReferenceFiducialWidget.currentNode()
+    toMarkupsNode = self.ui.toCTToReferenceFiducialWidget.currentNode()
     outputTransformNode = self.CTToReference
     
-    calibrationMessage = self.logic.landmarkRegistration(fromMarkupsNode, toMarkupsNode, outputTransformNode)
+    calibrationMessage, RMSE = self.logic.landmarkRegistration(fromMarkupsNode, toMarkupsNode, outputTransformNode)
 
-    self.ui.initialCTRegistrationErrorLabel.setText(calibrationMessage)
+    self.ui.initialCTRegistrationErrorLabel.setText(calibrationMessage.format(RMSE))
 
 
   def saveTransforms(self):
@@ -617,7 +662,28 @@ class LiverBiopsyLogic(ScriptedLoadableModuleLogic):
       
     outputTransformNode.SetMatrixTransformToParent(resultsMatrix)
     
-    return "Success" 
+    return self.calculateRMSE(nFromPoints, fromPoints, toPoints, resultsMatrix)
+    
+    
+  def calculateRMSE(self, nPoints, fromPoints, toPoints, transformMatrix):
+    logging.debug('calculateRMSE')
+    sumSquareError = 0
+    #T = transformMatrix.Get
+    
+    for i in range( nPoints ):
+      pFrom = fromPoints.GetPoint(i)
+      pTo = toPoints.GetPoint(i)
+      
+      #transform from point
+      pFrom = [pFrom[0], pFrom[1], pFrom[2], 1]
+      transformMatrix.MultiplyPoint(pFrom, pFrom)
+      
+      dist = (pTo[0] - pFrom[0])**2+(pTo[1] - pFrom[1])**2+(pTo[2] - pFrom[2])**2
+      sumSquareError += dist
+    
+    RMSE = math.sqrt(sumSquareError/nPoints)
+    
+    return "Success. Error = {0:.2f} mm", RMSE
 
 
 class LiverBiopsyTest(ScriptedLoadableModuleTest):

@@ -56,7 +56,7 @@
       <string>Probe Calibration</string>
      </property>
      <property name="collapsed">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <layout class="QFormLayout" name="formLayout_6">
       <item row="0" column="0" colspan="2">
@@ -66,7 +66,7 @@
         </property>
         <layout class="QFormLayout" name="formLayout_7">
          <item row="0" column="0" colspan="2">
-          <widget class="qSlicerSimpleMarkupsWidget" name="from3DUSVolumeFiducialWidget">
+          <widget class="qSlicerSimpleMarkupsWidget" name="fromUSToReferenceFiducialWidget">
            <property name="nodeSelectorVisible">
             <bool>false</bool>
            </property>
@@ -82,14 +82,14 @@
         </property>
         <layout class="QFormLayout" name="formLayout_8">
          <item row="0" column="0" colspan="2">
-          <widget class="qSlicerSimpleMarkupsWidget" name="toProbeFiducialWidget">
+          <widget class="qSlicerSimpleMarkupsWidget" name="toUSToReferenceFiducialWidget">
            <property name="nodeSelectorVisible">
             <bool>false</bool>
            </property>
           </widget>
          </item>
          <item row="1" column="0" colspan="2">
-          <widget class="QPushButton" name="placeToProbeFiducialButton">
+          <widget class="QPushButton" name="placeToUSToReferenceFiducialButton">
            <property name="text">
             <string>Place Fiducial Using Stylus</string>
            </property>
@@ -99,9 +99,19 @@
        </widget>
       </item>
       <item row="2" column="0" colspan="2">
-       <widget class="QPushButton" name="calibrate3DUSProbe">
+       <widget class="QPushButton" name="USCalibrationButton">
         <property name="text">
          <string>Start Calibration</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="2">
+       <widget class="QLabel" name="USCalibrationErrorLabel">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
         </property>
        </widget>
       </item>
@@ -225,7 +235,7 @@
         </property>
         <layout class="QFormLayout" name="formLayout_9">
          <item row="0" column="0" colspan="2">
-          <widget class="qSlicerSimpleMarkupsWidget" name="fromCTFiducialWidget">
+          <widget class="qSlicerSimpleMarkupsWidget" name="fromCTToReferenceFiducialWidget">
            <property name="enterPlaceModeOnNodeChange">
             <bool>true</bool>
            </property>
@@ -257,7 +267,7 @@
         </property>
         <layout class="QFormLayout" name="formLayout_10">
          <item row="0" column="0" colspan="2">
-          <widget class="qSlicerSimpleMarkupsWidget" name="toReferenceFiducialWidget">
+          <widget class="qSlicerSimpleMarkupsWidget" name="toCTToReferenceFiducialWidget">
            <property name="nodeSelectorVisible">
             <bool>false</bool>
            </property>
@@ -271,7 +281,7 @@
           </widget>
          </item>
          <item row="1" column="0" colspan="2">
-          <widget class="QPushButton" name="placeToReferenceFiducialButton">
+          <widget class="QPushButton" name="placeToCTToReferenceFiducialButton">
            <property name="text">
             <string>Place Fiducial Using Stylus</string>
            </property>
