@@ -60,6 +60,15 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     self.ui.toCTToReferenceFiducialWidget.setMRMLScene(slicer.mrmlScene)
 
     # connections
+    self.ui.FineCTRegistrationBox.connect('clicked(bool)', self.changeCollapsedView("FineCTRegistrationBox"))
+    self.ui.InitialCTRegistrationBox.connect('clicked(bool)', self.changeCollapsedView("InitialCTRegistrationBox"))
+    self.ui.NavigationBox.connect('clicked(bool)', self.changeCollapsedView("NavigationBox"))
+    self.ui.NeedleCalibrationBox.connect('clicked(bool)', self.changeCollapsedView("NeedleCalibrationBox"))
+    self.ui.ProbeCalibrationBox.connect('clicked(bool)', self.changeCollapsedView("ProbeCalibrationBox"))
+    self.ui.SettingsBox.connect('clicked(bool)', self.changeCollapsedView("SettingsBox"))
+    self.ui.StylusCalibrationBox.connect('clicked(bool)', self.changeCollapsedView("StylusCalibrationBox"))
+    self.ui.ConnectPLUSBox.connect('clicked(bool)', self.changeCollapsedView("ConnectPLUSBox"))
+    
     self.ui.saveButton.connect('clicked(bool)', self.onSaveScene)
     self.ui.connectPLUSButton.connect('clicked(bool)', self.onConnectPLUS)
     self.ui.layoutComboBox.connect('activated(const QString &)', self.onChangeLayout)
@@ -188,6 +197,22 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
         else:
           logging.debug('Creation of NeedleBaseToNeedle transform')
           
+    #Setup Us Probe Transforms
+    self.ImageToProbe = slicer.util.getFirstNodeByName('ImageToProbe', className='vtkMRMLLinearTransformNode')
+    if not self.ImageToProbe:
+      ImageToProbeFilePath = os.path.join(self.moduleTransformsPath, 'ImageToProbe.h5')
+      [success, self.ImageToProbe] = slicer.util.loadTransform(ImageToProbeFilePath, returnNode = True)
+      if success == True:
+        self.ImageToProbe.SetName("ImageToProbe")
+        slicer.mrmlScene.AddNode(self.ImageToProbe)
+      else:
+        logging.debug('Could not load ImageToProbe from file')
+        self.ImageToProbe = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'ImageToProbe')
+        if not self.ImageToProbe:
+          logging.debug('Failed: Creation of ImageToProbe transform')
+        else:
+          logging.debug('Creation of ImageToProbe transform')
+    
     #Setup CT Transforms
     
     self.CTToReference = slicer.util.getFirstNodeByName('CTToReference', className='vtkMRMLLinearTransformNode')
@@ -227,6 +252,13 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
       self.NeedleToReference=slicer.vtkMRMLLinearTransformNode()
       self.NeedleToReference.SetName("NeedleToReference")
       slicer.mrmlScene.AddNode(self.NeedleToReference)
+      
+    self.ProbeToReference = slicer.util.getFirstNodeByName('ProbeToReference', className='vtkMRMLLinearTransformNode')
+    if not self.ProbeToReference:
+      self.ProbeToReference=slicer.vtkMRMLLinearTransformNode()
+      self.ProbeToReference.SetName("ProbeToReference")
+      slicer.mrmlScene.AddNode(self.ProbeToReference)
+
 
 
     # Build Transform Tree
@@ -238,6 +270,8 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     self.NeedleTipToNeedle.SetAndObserveTransformNodeID(self.NeedleToReference.GetID())
     self.NeedleModel_NeedleTip.SetAndObserveTransformNodeID(self.NeedleTipToNeedle.GetID())
     self.NeedleBaseToNeedle.SetAndObserveTransformNodeID(self.NeedleToReference.GetID())
+    self.ProbeToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
+    self.ImageToProbe.SetAndObserveTransformNodeID(self.ProbeToReference.GetID())
     self.CTToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
     
     
@@ -269,6 +303,53 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
 
   def cleanup(self):
     pass
+
+
+  def changeCollapsedView(self, expandedBox):
+    logging.debug('changeCollapsedView')
+    #TODO fix toggling of collapsible boxes so only one can be active
+    
+    # print(expandedBox)
+    
+    # if expandedBox == "ConnectPLUSBox": 
+      # self.ui.ConnectPLUSBox.setProperty('collapsed', False)
+    # else:
+      # self.ui.ConnectPLUSBox.setProperty('collapsed', True)
+    
+    # if expandedBox == "FineCTRegistrationBox": 
+      # self.ui.FineCTRegistrationBox.setProperty('collapsed', False)
+    # else:
+      # self.ui.FineCTRegistrationBox.setProperty('collapsed', True)
+      
+    # if expandedBox == "InitialCTRegistrationBox": 
+      # self.ui.InitialCTRegistrationBox.setProperty('collapsed', False)
+    # else:
+      # self.ui.InitialCTRegistrationBox.setProperty('collapsed', True)
+      
+    # if expandedBox == "NavigationBox": 
+      # self.ui.NavigationBox.setProperty('collapsed', False)
+    # else:
+      # self.ui.NavigationBox.setProperty('collapsed', True)
+      
+    # if expandedBox == "NeedleCalibrationBox": 
+      # self.ui.NeedleCalibrationBox.setProperty('collapsed', False)
+    # else:
+      # self.ui.NeedleCalibrationBox.setProperty('collapsed', True)
+      
+    # if expandedBox == "ProbeCalibrationBox": 
+      # self.ui.ProbeCalibrationBox.setProperty('collapsed', False)
+    # else:
+      # self.ui.ProbeCalibrationBox.setProperty('collapsed', True)
+      
+    # if expandedBox == "SettingsBox": 
+      # self.ui.SettingsBox.setProperty('collapsed', False)
+    # else:
+      # self.ui.SettingsBox.setProperty('collapsed', True)
+    
+    # if expandedBox == "StylusCalibrationBox": 
+      # self.ui.StylusCalibrationBox.setProperty('collapsed', False)
+    # else:
+      # self.ui.StylusCalibrationBox.setProperty('collapsed', True)
 
 
   def setupCustomViews(self):
@@ -551,13 +632,22 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     return [StylusTipToReference.GetElement(0,3), StylusTipToReference.GetElement(1,3), StylusTipToReference.GetElement(2,3)]
 
 
+  def returnTransformedPointAtStylusTip(self, TargetTransform): #Coordinate returned is in target coordinate system
+    logging.debug('returnTransformedPointAtStylusTip')
+    StylusTipToTarget = vtk.vtkMatrix4x4()
+
+    self.StylusTipToStylus.GetMatrixTransformToNode(TargetTransform, StylusTipToReference)
+    
+    return [StylusTipToReference.GetElement(0,3), StylusTipToReference.GetElement(1,3), StylusTipToReference.GetElement(2,3)]
+
+
   def placeToUSToReferenceFiducial(self):
     logging.debug("placeToUSToReferenceFiducial")
     
     currentNode = self.ui.toUSToReferenceFiducialWidget.currentNode()
     
     self.markupsLogic.SetActiveListID(currentNode)
-    newFiducial = self.returnPointAtStylusTip()
+    newFiducial = self.returnTransformedPointAtStylusTip(self.ProbeToReference)
     
     currentNode.AddFiducialFromArray(newFiducial)
 
@@ -684,6 +774,21 @@ class LiverBiopsyLogic(ScriptedLoadableModuleLogic):
     RMSE = math.sqrt(sumSquareError/nPoints)
     
     return "Success. Error = {0:.2f} mm", RMSE
+    
+  def calculateSubtransform(self, AToCTransformNode, BToCTransformNode, outputTransformNode):
+    logging.debug('calculateSubtransform')
+    # In a transform hierarchy with A -> B -> C 
+    # This function calculates the transform A -> B given the transforms B -> C and A -> C 
+    AToCMatrix = vtk.vtkMatrix4x4()
+    
+    
+    CToBMatrix = vtk.vtkMatrix4x4()
+    
+    resultsMatrix = vtk.vtkMatrix4x4()
+    resultsMatrix.Multiply4x4(CToBMatrix, AToCMatrix)
+    
+    outputTransformNode.SetMatrixTransformToParent(resultsMatrix)
+    return
 
 
 class LiverBiopsyTest(ScriptedLoadableModuleTest):

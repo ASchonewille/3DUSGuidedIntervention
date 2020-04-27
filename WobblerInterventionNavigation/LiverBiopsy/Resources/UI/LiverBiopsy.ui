@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>352</width>
-    <height>999</height>
+    <height>1030</height>
    </rect>
   </property>
   <property name="acceptDrops">
@@ -15,7 +15,7 @@
   </property>
   <layout class="QFormLayout" name="formLayout">
    <item row="0" column="0" colspan="2">
-    <widget class="ctkCollapsibleGroupBox" name="ConnectPLUS">
+    <widget class="ctkCollapsibleGroupBox" name="ConnectPLUSBox">
      <property name="title">
       <string>Connect to PLUS</string>
      </property>
@@ -48,78 +48,7 @@
     </widget>
    </item>
    <item row="1" column="0" colspan="2">
-    <widget class="ctkCollapsibleGroupBox" name="ProbeCalibration">
-     <property name="enabled">
-      <bool>true</bool>
-     </property>
-     <property name="title">
-      <string>Probe Calibration</string>
-     </property>
-     <property name="collapsed">
-      <bool>false</bool>
-     </property>
-     <layout class="QFormLayout" name="formLayout_6">
-      <item row="0" column="0" colspan="2">
-       <widget class="ctkCollapsibleGroupBox" name="CollapsibleGroupBox">
-        <property name="title">
-         <string>3D US Image Fiducials</string>
-        </property>
-        <layout class="QFormLayout" name="formLayout_7">
-         <item row="0" column="0" colspan="2">
-          <widget class="qSlicerSimpleMarkupsWidget" name="fromUSToReferenceFiducialWidget">
-           <property name="nodeSelectorVisible">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item row="1" column="0" colspan="2">
-       <widget class="ctkCollapsibleGroupBox" name="CollapsibleGroupBox_2">
-        <property name="title">
-         <string>Reference Fiducials</string>
-        </property>
-        <layout class="QFormLayout" name="formLayout_8">
-         <item row="0" column="0" colspan="2">
-          <widget class="qSlicerSimpleMarkupsWidget" name="toUSToReferenceFiducialWidget">
-           <property name="nodeSelectorVisible">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0" colspan="2">
-          <widget class="QPushButton" name="placeToUSToReferenceFiducialButton">
-           <property name="text">
-            <string>Place Fiducial Using Stylus</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item row="2" column="0" colspan="2">
-       <widget class="QPushButton" name="USCalibrationButton">
-        <property name="text">
-         <string>Start Calibration</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0" colspan="2">
-       <widget class="QLabel" name="USCalibrationErrorLabel">
-        <property name="text">
-         <string/>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="2" column="0" colspan="2">
-    <widget class="ctkCollapsibleGroupBox" name="StylusCalibration">
+    <widget class="ctkCollapsibleGroupBox" name="StylusCalibrationBox">
      <property name="title">
       <string>Stylus Calibration</string>
      </property>
@@ -164,8 +93,8 @@
      </layout>
     </widget>
    </item>
-   <item row="4" column="0" colspan="2">
-    <widget class="ctkCollapsibleGroupBox" name="NeedleCalibration">
+   <item row="2" column="0" colspan="2">
+    <widget class="ctkCollapsibleGroupBox" name="NeedleCalibrationBox">
      <property name="acceptDrops">
       <bool>true</bool>
      </property>
@@ -219,8 +148,79 @@
      </layout>
     </widget>
    </item>
-   <item row="5" column="0" colspan="2">
-    <widget class="ctkCollapsibleGroupBox" name="InitialCTRegistration">
+   <item row="3" column="0" colspan="2">
+    <widget class="ctkCollapsibleGroupBox" name="ProbeCalibrationBox">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="title">
+      <string>Probe Calibration</string>
+     </property>
+     <property name="collapsed">
+      <bool>true</bool>
+     </property>
+     <layout class="QFormLayout" name="formLayout_6">
+      <item row="0" column="0" colspan="2">
+       <widget class="ctkCollapsibleGroupBox" name="CollapsibleGroupBox">
+        <property name="title">
+         <string>US Fiducials</string>
+        </property>
+        <layout class="QFormLayout" name="formLayout_7">
+         <item row="0" column="0" colspan="2">
+          <widget class="qSlicerSimpleMarkupsWidget" name="fromUSToReferenceFiducialWidget">
+           <property name="nodeSelectorVisible">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="ctkCollapsibleGroupBox" name="CollapsibleGroupBox_2">
+        <property name="title">
+         <string>Reference Fiducials</string>
+        </property>
+        <layout class="QFormLayout" name="formLayout_8">
+         <item row="0" column="0" colspan="2">
+          <widget class="qSlicerSimpleMarkupsWidget" name="toUSToReferenceFiducialWidget">
+           <property name="nodeSelectorVisible">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" colspan="2">
+          <widget class="QPushButton" name="placeToUSToReferenceFiducialButton">
+           <property name="text">
+            <string>Place Fiducial Using Stylus</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
+       <widget class="QPushButton" name="USCalibrationButton">
+        <property name="text">
+         <string>Calculate Calibration</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="2">
+       <widget class="QLabel" name="USCalibrationErrorLabel">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="2">
+    <widget class="ctkCollapsibleGroupBox" name="InitialCTRegistrationBox">
      <property name="title">
       <string>Initial CT Registration</string>
      </property>
@@ -263,7 +263,10 @@
       <item row="2" column="0" colspan="2">
        <widget class="ctkCollapsibleGroupBox" name="CollapsibleGroupBox_4">
         <property name="title">
-         <string>Patient Fiducials </string>
+         <string>Reference Fiducials </string>
+        </property>
+        <property name="collapsed">
+         <bool>false</bool>
         </property>
         <layout class="QFormLayout" name="formLayout_10">
          <item row="0" column="0" colspan="2">
@@ -293,7 +296,7 @@
       <item row="3" column="0" colspan="2">
        <widget class="QPushButton" name="initialCTRegistrationButton">
         <property name="text">
-         <string>Start Registration</string>
+         <string>Calculate Registration</string>
         </property>
        </widget>
       </item>
@@ -310,8 +313,8 @@
      </layout>
     </widget>
    </item>
-   <item row="6" column="0" colspan="2">
-    <widget class="ctkCollapsibleGroupBox" name="FineCTRegistration">
+   <item row="5" column="0" colspan="2">
+    <widget class="ctkCollapsibleGroupBox" name="FineCTRegistrationBox">
      <property name="title">
       <string>Fine CT Registration</string>
      </property>
@@ -320,18 +323,8 @@
      </property>
     </widget>
    </item>
-   <item row="8" column="0" colspan="2">
-    <widget class="ctkCollapsibleGroupBox" name="USCapture">
-     <property name="title">
-      <string>Save 3D US Volume</string>
-     </property>
-     <property name="collapsed">
-      <bool>false</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="9" column="0" colspan="2">
-    <widget class="ctkCollapsibleGroupBox" name="Navigation">
+   <item row="6" column="0" colspan="2">
+    <widget class="ctkCollapsibleGroupBox" name="NavigationBox">
      <property name="title">
       <string>Navigation</string>
      </property>
@@ -368,8 +361,8 @@
      </layout>
     </widget>
    </item>
-   <item row="10" column="0" colspan="2">
-    <widget class="ctkCollapsibleGroupBox" name="Settings">
+   <item row="7" column="0" colspan="2">
+    <widget class="ctkCollapsibleGroupBox" name="SettingsBox">
      <property name="enabled">
       <bool>true</bool>
      </property>
@@ -431,7 +424,7 @@
      </layout>
     </widget>
    </item>
-   <item row="11" column="0" colspan="2">
+   <item row="8" column="0" colspan="2">
     <widget class="QPushButton" name="testButton">
      <property name="text">
       <string>Test</string>
