@@ -636,9 +636,9 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     logging.debug('returnTransformedPointAtStylusTip')
     StylusTipToTarget = vtk.vtkMatrix4x4()
 
-    self.StylusTipToStylus.GetMatrixTransformToNode(TargetTransform, StylusTipToReference)
+    self.StylusTipToStylus.GetMatrixTransformToNode(TargetTransform, StylusTipToTarget)
     
-    return [StylusTipToReference.GetElement(0,3), StylusTipToReference.GetElement(1,3), StylusTipToReference.GetElement(2,3)]
+    return [StylusTipToTarget.GetElement(0,3), StylusTipToTarget.GetElement(1,3), StylusTipToTarget.GetElement(2,3)]
 
 
   def placeToUSToReferenceFiducial(self):
@@ -657,7 +657,7 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     
     fromMarkupsNode = self.ui.fromUSToReferenceFiducialWidget.currentNode()
     toMarkupsNode = self.ui.toUSToReferenceFiducialWidget.currentNode()
-    outputTransformNode = self.USToReference
+    outputTransformNode = self.ImageToProbe
     
     calibrationMessage, RMSE = self.logic.landmarkRegistration(fromMarkupsNode, toMarkupsNode, outputTransformNode)
 
