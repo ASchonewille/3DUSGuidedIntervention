@@ -53,9 +53,11 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     
     # Set up slicer scene
     self.setupScene()
-    
-    self.ui.fromUSToReferenceFiducialWidget.setMRMLScene(slicer.mrmlScene)
-    self.ui.toUSToReferenceFiducialWidget.setMRMLScene(slicer.mrmlScene)
+
+    self.ui.fromProbeToUSFiducialWidget.setMRMLScene(slicer.mrmlScene)
+    self.ui.toProbeToUSFiducialWidget.setMRMLScene(slicer.mrmlScene)
+#    self.ui.fromUSToReferenceFiducialWidget.setMRMLScene(slicer.mrmlScene)
+#    self.ui.toUSToReferenceFiducialWidget.setMRMLScene(slicer.mrmlScene)
     self.ui.fromCTToReferenceFiducialWidget.setMRMLScene(slicer.mrmlScene)
     self.ui.toCTToReferenceFiducialWidget.setMRMLScene(slicer.mrmlScene)
 
@@ -77,7 +79,7 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     self.ui.stylusSpinCalibrationButton.connect('clicked(bool)', self.stylusSpinCalibration)
     self.ui.stylusPivotCalibrationButton.connect('clicked(bool)', self.stylusPivotCalibration)
     self.ui.USCalibrationButton.connect('clicked(bool)', self.USCalibration)
-    self.ui.placeToUSToReferenceFiducialButton.connect('clicked(bool)', self.placeToUSToReferenceFiducial)
+#    self.ui.placeToUSToReferenceFiducialButton.connect('clicked(bool)', self.placeToUSToReferenceFiducial)
     self.ui.initialCTRegistrationButton.connect('clicked(bool)', self.initialCTRegistration)
     self.ui.placeToCTToReferenceFiducialButton.connect('clicked(bool)', self.placeToCTToReferenceFiducial)
     
@@ -85,11 +87,15 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     self.toolCalibrationTimer.setInterval(500)
     self.toolCalibrationTimer.setSingleShot(True)
     self.toolCalibrationTimer.connect('timeout()', self.toolCalibrationTimeout)
-    
-    self.ui.fromUSToReferenceFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('FromUSToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode'))
-    self.ui.fromUSToReferenceFiducialWidget.setNodeColor(qt.QColor(207,26,0,255))
-    self.ui.toUSToReferenceFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('ToUSToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode'))
-    self.ui.toUSToReferenceFiducialWidget.setNodeColor(qt.QColor(103,0,225,255))
+
+    self.ui.fromProbeToUSFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('FromProbeToUSFiducialNode', className='vtkMRMLMarkupsFiducialNode'))
+    self.ui.fromProbeToUSFiducialWidget.setNodeColor(qt.QColor(207,26,0,255))
+    self.ui.toProbeToUSFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('ToProbeToUSFiducialNode', className='vtkMRMLMarkupsFiducialNode'))
+    self.ui.toProbeToUSFiducialWidget.setNodeColor(qt.QColor(103,0,225,255))
+#    self.ui.fromUSToReferenceFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('FromUSToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode'))
+#    self.ui.fromUSToReferenceFiducialWidget.setNodeColor(qt.QColor(207,26,0,255))
+#    self.ui.toUSToReferenceFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('ToUSToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode'))
+#    self.ui.toUSToReferenceFiducialWidget.setNodeColor(qt.QColor(103,0,225,255))
     
     self.ui.fromCTToReferenceFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('FromCTToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode'))
     self.ui.fromCTToReferenceFiducialWidget.setNodeColor(qt.QColor(85,255,0,255))
@@ -134,7 +140,68 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     self.NeedleModel_NeedleTip.GetDisplayNode().SetColor(1,1,0)
       
     # Transforms
-    
+
+    # US Calibration Austria Names
+    self.ProbeToUS = slicer.util.getFirstNodeByName('ProbeToUS', className='vtkMRMLLinearTransformNode')
+    if not self.ProbeToUS:
+      self.ProbeToUSFilePath = os.path.join(self.moduleTransformsPath, 'ProbeToUS.h5')
+      [success, self.ProbeToUS] = slicer.util.loadTransform(self.ProbeToUSFilePath, returnNode = True)
+      if success == True:
+        self.ProbeToUS.SetName("ProbeToUS")
+        slicer.mrmlScene.AddNode(self.ProbeToUS)
+      else:
+        logging.debug('Could not load ProbeToUS from file')
+        self.ProbeToUS = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'ProbeToUS')
+        if not self.ProbeToUS:
+          logging.debug('Failed: Creation of ProbeToUS transform')
+        else:
+          logging.debug('Creation of ProbeToUS transform')
+
+    self.TableToProbe = slicer.util.getFirstNodeByName('TableToProbe', className='vtkMRMLLinearTransformNode')
+    if not self.TableToProbe:
+      self.TableToProbeFilePath = os.path.join(self.moduleTransformsPath, 'TableToProbe.h5')
+      [success, self.TableToProbe] = slicer.util.loadTransform(self.TableToProbeFilePath, returnNode=True)
+      if success == True:
+        self.TableToProbe.SetName("TableToProbe")
+        slicer.mrmlScene.AddNode(self.TableToProbe)
+      else:
+        logging.debug('Could not load TableToProbe from file')
+        self.TableToProbe = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'TableToProbe')
+        if not self.TableToProbe:
+          logging.debug('Failed: Creation of TableToProbe transform')
+        else:
+          logging.debug('Creation of TableToProbe transform')
+
+    self.MRIToTable = slicer.util.getFirstNodeByName('MRIToTable', className='vtkMRMLLinearTransformNode')
+    if not self.MRIToTable:
+      self.MRIToTableFilePath = os.path.join(self.moduleTransformsPath, 'MRIToTable.h5')
+      [success, self.MRIToTable] = slicer.util.loadTransform(self.MRIToTableFilePath, returnNode=True)
+      if success == True:
+        self.MRIToTable.SetName("MRIToTable")
+        slicer.mrmlScene.AddNode(self.MRIToTable)
+      else:
+        logging.debug('Could not load MRIToTable from file')
+        self.MRIToTable = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'MRIToTable')
+        if not self.MRIToTable:
+          logging.debug('Failed: Creation of MRIToTable transform')
+        else:
+          logging.debug('Creation of MRIToTable transform')
+
+    self.ImageToMRI = slicer.util.getFirstNodeByName('ImageToMRI', className='vtkMRMLLinearTransformNode')
+    if not self.ImageToMRI:
+      self.ImageToMRIFilePath = os.path.join(self.moduleTransformsPath, 'ImageToMRI.h5')
+      [success, self.ImageToMRI] = slicer.util.loadTransform(self.ImageToMRIFilePath, returnNode=True)
+      if success == True:
+        self.MRIToTable.SetName("ImageToMRI")
+        slicer.mrmlScene.AddNode(self.ImageToMRI)
+      else:
+        logging.debug('Could not load ImageToMRI from file')
+        self.ImageToMRI = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'ImageToMRI')
+        if not self.ImageToMRI:
+          logging.debug('Failed: Creation of ImageToMRI transform')
+        else:
+          logging.debug('Creation of ImageToMRI transform')
+
     # Setup Stylus Transforms
     self.StylusTipToStylus = slicer.util.getFirstNodeByName('StylusTipToStylus', className='vtkMRMLLinearTransformNode')
     if not self.StylusTipToStylus:
@@ -262,6 +329,12 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
 
 
     # Build Transform Tree
+
+    # US Calibration Austria Names
+    self.TableToProbe.SetAndObserveTransformNodeID(self.ProbeToUS.GetID())
+    self.MRIToTable.SetAndObserveTransformNodeID(self.TableToProbe.GetID())
+    self.ImageToMRI.SetAndObserveTransformNodeID(self.MRIToTable.GetID())
+
     self.StylusToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
     self.StylusTipToStylus.SetAndObserveTransformNodeID(self.StylusToReference.GetID())
     self.StylusModel_StylusTip.SetAndObserveTransformNodeID(self.StylusTipToStylus.GetID())
@@ -273,9 +346,24 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     self.ProbeToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
     self.ImageToProbe.SetAndObserveTransformNodeID(self.ProbeToReference.GetID())
     self.CTToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
-    
-    
+
+
     # Markups Nodes
+
+    # US Calibration Austria Names
+    self.FromProbeToUSFiducialNode = slicer.util.getFirstNodeByName('FromProbeToUSFiducialNode', className='vtkMRMLMarkupsFiducialNode')
+    if not self.FromProbeToUSFiducialNode:
+      self.FromProbeToUSFiducialNode = slicer.vtkMRMLMarkupsFiducialNode()
+      self.FromProbeToUSFiducialNode.SetName('FromProbeToUSFiducialNode')
+      slicer.mrmlScene.AddNode(self.FromProbeToUSFiducialNode)
+
+    self.ToProbeToUSFiducialNode = slicer.util.getFirstNodeByName('ToProbeToUSFiducialNode', className='vtkMRMLMarkupsFiducialNode')
+    if not self.ToProbeToUSFiducialNode:
+      self.ToProbeToUSFiducialNode = slicer.vtkMRMLMarkupsFiducialNode()
+      self.ToProbeToUSFiducialNode.SetName('ToProbeToUSFiducialNode')
+      slicer.mrmlScene.AddNode(self.ToProbeToUSFiducialNode)
+
+
     self.FromUSToReferenceFiducialNode = slicer.util.getFirstNodeByName('FromUSToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode')
     if not self.FromUSToReferenceFiducialNode:
       self.FromUSToReferenceFiducialNode = slicer.vtkMRMLMarkupsFiducialNode()
@@ -644,7 +732,7 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
   def placeToUSToReferenceFiducial(self):
     logging.debug("placeToUSToReferenceFiducial")
     
-    currentNode = self.ui.toUSToReferenceFiducialWidget.currentNode()
+    currentNode = self.ui.toProbeToUSFiducialWidget.currentNode()
     
     self.markupsLogic.SetActiveListID(currentNode)
     newFiducial = self.returnTransformedPointAtStylusTip(self.ProbeToReference)
@@ -655,9 +743,9 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
   def USCalibration(self):
     logging.debug("USCalibration")
     
-    fromMarkupsNode = self.ui.fromUSToReferenceFiducialWidget.currentNode()
-    toMarkupsNode = self.ui.toUSToReferenceFiducialWidget.currentNode()
-    outputTransformNode = self.ImageToProbe
+    fromMarkupsNode = self.ui.fromProbeToUSFiducialWidget.currentNode()
+    toMarkupsNode = self.ui.toProbeToUSFiducialWidget.currentNode()
+    outputTransformNode = self.ProbeToUS
     
     calibrationMessage, RMSE = self.logic.landmarkRegistration(fromMarkupsNode, toMarkupsNode, outputTransformNode)
 
