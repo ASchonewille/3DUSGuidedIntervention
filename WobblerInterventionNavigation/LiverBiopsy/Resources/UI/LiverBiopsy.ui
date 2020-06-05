@@ -7,7 +7,15 @@
     <x>0</x>
     <y>0</y>
     <width>352</width>
+<<<<<<< HEAD
     <height>927</height>
+=======
+<<<<<<< HEAD
+    <height>999</height>
+=======
+    <height>941</height>
+>>>>>>> fc2de592519fcc706ce0d703acb6832281ff54f3
+>>>>>>> remotes/origin/master
    </rect>
   </property>
   <property name="acceptDrops">
