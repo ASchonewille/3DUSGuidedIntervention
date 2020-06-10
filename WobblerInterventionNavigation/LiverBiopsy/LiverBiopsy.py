@@ -328,26 +328,6 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
 
 
 
-    # Build Transform Tree
-
-    # US Calibration Austria Names
-    self.TableToProbe.SetAndObserveTransformNodeID(self.ProbeToUS.GetID())
-    self.MRIToTable.SetAndObserveTransformNodeID(self.TableToProbe.GetID())
-    self.ImageToMRI.SetAndObserveTransformNodeID(self.MRIToTable.GetID())
-
-    self.StylusToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
-    self.StylusTipToStylus.SetAndObserveTransformNodeID(self.StylusToReference.GetID())
-    self.StylusModel_StylusTip.SetAndObserveTransformNodeID(self.StylusTipToStylus.GetID())
-    self.StylusBaseToStylus.SetAndObserveTransformNodeID(self.StylusToReference.GetID())
-    self.NeedleToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
-    self.NeedleTipToNeedle.SetAndObserveTransformNodeID(self.NeedleToReference.GetID())
-    self.NeedleModel_NeedleTip.SetAndObserveTransformNodeID(self.NeedleTipToNeedle.GetID())
-    self.NeedleBaseToNeedle.SetAndObserveTransformNodeID(self.NeedleToReference.GetID())
-    self.ProbeToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
-    self.ImageToProbe.SetAndObserveTransformNodeID(self.ProbeToReference.GetID())
-    self.CTToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
-
-
     # Markups Nodes
 
     # US Calibration Austria Names
@@ -362,6 +342,21 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
       self.ToProbeToUSFiducialNode = slicer.vtkMRMLMarkupsFiducialNode()
       self.ToProbeToUSFiducialNode.SetName('ToProbeToUSFiducialNode')
       slicer.mrmlScene.AddNode(self.ToProbeToUSFiducialNode)
+
+    self.TestPointUS = slicer.util.getFirstNodeByName('TestPoint-US', className='vtkMRMLMarkupsFiducialNode')
+    if not self.TestPointUS:
+      self.TestPointUS = slicer.vtkMRMLMarkupsFiducialNode()
+      self.TestPointUS.SetName('TestPoint-US')
+      self.TestPointUS.AddFiducialFromArray([0,0,0])
+      slicer.mrmlScene.AddNode(self.TestPointUS)
+
+    self.TestPointMRI = slicer.util.getFirstNodeByName('TestPoint-MRI', className='vtkMRMLMarkupsFiducialNOde')
+    if not self.TestPointMRI:
+      self.TestPointMRI = slicer.vtkMRMLMarkupsFiducialNode()
+      self.TestPointMRI.SetName('TestPoint-MRI')
+      self.TestPointMRI.AddFiducialFromArray([0,0,0])
+      slicer.mrmlScene.AddNode(self.TestPointMRI)
+
 
 
     self.FromUSToReferenceFiducialNode = slicer.util.getFirstNodeByName('FromUSToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode')
@@ -388,6 +383,28 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
       self.ToCTToReferenceFiducialNode.SetName('ToCTToReferenceFiducials')
       slicer.mrmlScene.AddNode(self.ToCTToReferenceFiducialNode)
 
+
+
+    # Build Transform Tree
+
+    # US Calibration Austria Names
+    self.TableToProbe.SetAndObserveTransformNodeID(self.ProbeToUS.GetID())
+    self.MRIToTable.SetAndObserveTransformNodeID(self.TableToProbe.GetID())
+    self.ImageToMRI.SetAndObserveTransformNodeID(self.MRIToTable.GetID())
+    self.FromProbeToUSFiducialNode.SetAndObserveTransformNodeID(self.ImageToMRI.GetID())
+    self.TestPointMRI.SetAndObserveTransformNodeID(self.ImageToMRI.GetID())
+
+    self.StylusToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
+    self.StylusTipToStylus.SetAndObserveTransformNodeID(self.StylusToReference.GetID())
+    self.StylusModel_StylusTip.SetAndObserveTransformNodeID(self.StylusTipToStylus.GetID())
+    self.StylusBaseToStylus.SetAndObserveTransformNodeID(self.StylusToReference.GetID())
+    self.NeedleToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
+    self.NeedleTipToNeedle.SetAndObserveTransformNodeID(self.NeedleToReference.GetID())
+    self.NeedleModel_NeedleTip.SetAndObserveTransformNodeID(self.NeedleTipToNeedle.GetID())
+    self.NeedleBaseToNeedle.SetAndObserveTransformNodeID(self.NeedleToReference.GetID())
+    self.ProbeToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
+    self.ImageToProbe.SetAndObserveTransformNodeID(self.ProbeToReference.GetID())
+    self.CTToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
 
   def cleanup(self):
     pass
@@ -785,7 +802,10 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
 
 
   def onTestFunction(self):
-    
+    Cone1Point = self.TestPointMRI1
+    Cone2Point = self.TestPointMRI2
+    dist = self.logic.twoPointDistance(Cone1Point, Cone2Point)
+    print(dist)
     print("End Test")
 
 
@@ -820,9 +840,9 @@ class LiverBiopsyLogic(ScriptedLoadableModuleLogic):
 
     for i in range( nFromPoints ):
       p = [0, 0, 0]
-      fromMarkupsNode.GetNthFiducialPosition(i, p)
+      fromMarkupsNode.GetNthControlPointPositionWorld(i, p)
       fromPoints.InsertNextPoint( p )
-      toMarkupsNode.GetNthFiducialPosition(i, p)
+      toMarkupsNode.GetNthControlPointPositionWorld(i, p)
       toPoints.InsertNextPoint( p )
 
     lt = vtk.vtkLandmarkTransform()
@@ -842,26 +862,41 @@ class LiverBiopsyLogic(ScriptedLoadableModuleLogic):
     
     return self.calculateRMSE(nFromPoints, fromPoints, toPoints, resultsMatrix)
     
-    
   def calculateRMSE(self, nPoints, fromPoints, toPoints, transformMatrix):
     logging.debug('calculateRMSE')
     sumSquareError = 0
-    #T = transformMatrix.Get
     
     for i in range( nPoints ):
       pFrom = fromPoints.GetPoint(i)
       pTo = toPoints.GetPoint(i)
-      
-      #transform from point
+
       pFrom = [pFrom[0], pFrom[1], pFrom[2], 1]
       transformMatrix.MultiplyPoint(pFrom, pFrom)
       
-      dist = (pTo[0] - pFrom[0])**2+(pTo[1] - pFrom[1])**2+(pTo[2] - pFrom[2])**2
+      dist = (pTo[0] - pFrom[0]) ** 2 + (pTo[1] - pFrom[1]) ** 2 + (pTo[2] - pFrom[2]) ** 2
       sumSquareError += dist
     
     RMSE = math.sqrt(sumSquareError/nPoints)
     
     return "Success. Error = {0:.2f} mm", RMSE
+
+  def twoPointDistance(self, fiducial1, fiducial2):
+    logging.debug('twoPointDistance')
+
+    point1 = vtk.vtkPoints()
+    point2 = vtk.vtkPoints()
+
+    p = [0, 0, 0]
+    fiducial1.GetNthControlPointPositionWorld(0, p)
+    point1.InsertNextPoint(p)
+    fiducial2.GetNthControlPointPositionWorld(0, p)
+    point2.InsertNextPoint(p)
+
+    p1 = point1.GetPoint(0)
+    p2 = point2.GetPoint(0)
+
+    dist = (p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2 + (p2[2] - p1[2]) ** 2
+    return dist
     
   def calculateSubtransform(self, AToCTransformNode, BToCTransformNode, outputTransformNode):
     logging.debug('calculateSubtransform')
