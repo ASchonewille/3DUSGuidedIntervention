@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>352</width>
-    <height>927</height>
+    <height>958</height>
    </rect>
   </property>
   <property name="acceptDrops">
@@ -312,7 +312,7 @@
       <string>Fine CT Registration</string>
      </property>
      <property name="collapsed">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
     </widget>
    </item>
@@ -322,7 +322,7 @@
       <string>Navigation</string>
      </property>
      <property name="collapsed">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <layout class="QFormLayout" name="formLayout_4">
       <item row="0" column="0">
@@ -349,6 +349,13 @@
           <string>RGBO3D View</string>
          </property>
         </item>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="QPushButton" name="freezeUltrasoundButton">
+        <property name="text">
+         <string>Freeze Ultrasound</string>
+        </property>
        </widget>
       </item>
      </layout>
