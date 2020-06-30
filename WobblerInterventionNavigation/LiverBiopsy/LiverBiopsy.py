@@ -73,10 +73,9 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     self.ui.initialCTRegistrationButton.connect('clicked(bool)', self.initialCTRegistration)
     self.ui.placeToCTToReferenceFiducialButton.connect('clicked(bool)', self.placeToCTToReferenceFiducial)
     self.ui.freezeUltrasoundButton.connect('clicked(bool)', self.onFreezeUltrasound)
-    
+
     self.toolCalibrationTimer = qt.QTimer()
     self.toolCalibrationTimer.setInterval(500)
-    self.toolCalibrationTimer.setSingleShot(True)
     self.toolCalibrationTimer.connect('timeout()', self.toolCalibrationTimeout)
 
     self.ui.fromProbeToUSFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('FromProbeToUSFiducialNode', className='vtkMRMLMarkupsFiducialNode'))
@@ -90,9 +89,6 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     self.ui.toCTToReferenceFiducialWidget.setNodeColor(qt.QColor(255,170,0,255))
     
     self.ui.testButton.connect('clicked(bool)', self.onTestFunction)
-    
-    # Add vertical spacer
-    self.layout.addStretch(1)
 
 
   def setupScene(self):
@@ -103,8 +99,9 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     self.moduleTransformsPath = os.path.join(self.modulePath, 'Resources/Transforms')
     
     self.toolCalibrationMode = self.PIVOT_CALIBRATION
-    
-    self.pivotCalibrationLogic = slicer.modules.pivotcalibration.logic()
+
+    #TODO remove if tool cal from logic works
+#    self.pivotCalibrationLogic = slicer.modules.pivotcalibration.logic()
     self.markupsLogic = slicer.modules.markups.logic()
   
     # Models
@@ -129,198 +126,43 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     # Transforms
 
     # US Calibration Austria Names
-    self.ProbeToUS = slicer.util.getFirstNodeByName('ProbeToUS', className='vtkMRMLLinearTransformNode')
-    if not self.ProbeToUS:
-      self.ProbeToUSFilePath = os.path.join(self.moduleTransformsPath, 'ProbeToUS.h5')
-      [success, self.ProbeToUS] = slicer.util.loadTransform(self.ProbeToUSFilePath)
-      if success == True:
-        self.ProbeToUS.SetName("ProbeToUS")
-        slicer.mrmlScene.AddNode(self.ProbeToUS)
-      else:
-        logging.debug('Could not load ProbeToUS from file')
-        self.ProbeToUS = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'ProbeToUS')
-        if not self.ProbeToUS:
-          logging.debug('Failed: Creation of ProbeToUS transform')
-        else:
-          logging.debug('Creation of ProbeToUS transform')
-
-    self.TableToProbe = slicer.util.getFirstNodeByName('TableToProbe', className='vtkMRMLLinearTransformNode')
-    if not self.TableToProbe:
-      self.TableToProbeFilePath = os.path.join(self.moduleTransformsPath, 'TableToProbe.h5')
-      [success, self.TableToProbe] = slicer.util.loadTransform(self.TableToProbeFilePath, returnNode=True)
-      if success == True:
-        self.TableToProbe.SetName("TableToProbe")
-        slicer.mrmlScene.AddNode(self.TableToProbe)
-      else:
-        logging.debug('Could not load TableToProbe from file')
-        self.TableToProbe = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'TableToProbe')
-        if not self.TableToProbe:
-          logging.debug('Failed: Creation of TableToProbe transform')
-        else:
-          logging.debug('Creation of TableToProbe transform')
-
-    self.MRIToTable = slicer.util.getFirstNodeByName('MRIToTable', className='vtkMRMLLinearTransformNode')
-    if not self.MRIToTable:
-      self.MRIToTableFilePath = os.path.join(self.moduleTransformsPath, 'MRIToTable.h5')
-      [success, self.MRIToTable] = slicer.util.loadTransform(self.MRIToTableFilePath, returnNode=True)
-      if success == True:
-        self.MRIToTable.SetName("MRIToTable")
-        slicer.mrmlScene.AddNode(self.MRIToTable)
-      else:
-        logging.debug('Could not load MRIToTable from file')
-        self.MRIToTable = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'MRIToTable')
-        if not self.MRIToTable:
-          logging.debug('Failed: Creation of MRIToTable transform')
-        else:
-          logging.debug('Creation of MRIToTable transform')
-
-    self.ImageToMRI = slicer.util.getFirstNodeByName('ImageToMRI', className='vtkMRMLLinearTransformNode')
-    if not self.ImageToMRI:
-      self.ImageToMRIFilePath = os.path.join(self.moduleTransformsPath, 'ImageToMRI.h5')
-      [success, self.ImageToMRI] = slicer.util.loadTransform(self.ImageToMRIFilePath, returnNode=True)
-      if success == True:
-        self.MRIToTable.SetName("ImageToMRI")
-        slicer.mrmlScene.AddNode(self.ImageToMRI)
-      else:
-        logging.debug('Could not load ImageToMRI from file')
-        self.ImageToMRI = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'ImageToMRI')
-        if not self.ImageToMRI:
-          logging.debug('Failed: Creation of ImageToMRI transform')
-        else:
-          logging.debug('Creation of ImageToMRI transform')
+    self.ProbeToUS = self.createVTKMRMLElement('ProbeToUS', 'vtkMRMLLinearTransformNode')
+    self.TableToProbe = self.createVTKMRMLElement('TableToProbe', 'vtkMRMLLinearTransformNode')
+    self.MRIToTable = self.createVTKMRMLElement('MRIToTable', 'vtkMRMLLinearTransformNode')
+    self.ImageToMRI = self.createVTKMRMLElement('ImageToMRI', 'vtkMRMLLinearTransformNode')
 
     # Setup Stylus Transforms
-    self.StylusTipToStylus = slicer.util.getFirstNodeByName('StylusTipToStylus', className='vtkMRMLLinearTransformNode')
-    if not self.StylusTipToStylus:
-      self.StylusTipToStylusFilePath = os.path.join(self.moduleTransformsPath, 'StylusTipToStylus.h5')
-      [success, self.StylusTipToStylus] = slicer.util.loadTransform(self.StylusTipToStylusFilePath)
-      if success == True:
-        self.StylusTipToStylus.SetName("StylusTipToStylus")
-        slicer.mrmlScene.AddNode(self.StylusTipToStylus)
-      else:
-        logging.debug('Could not load StylusTipToStylus from file')
-        self.StylusTipToStylus = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'StylusTipToStylus')
-        if not self.StylusTipToStylus:
-          logging.debug('Failed: Creation of StylusTipToStylus transform')
-        else:
-          logging.debug('Creation of StylusTipToStylus transform')
-          
-    self.StylusBaseToStylus = slicer.util.getFirstNodeByName('StylusBaseToStylus', className='vtkMRMLLinearTransformNode')
-    if not self.StylusBaseToStylus:
-      StylusBaseToStylusFilePath = os.path.join(self.moduleTransformsPath, 'StylusBaseToStylus.h5')
-      [success, self.StylusBaseToStylus] = slicer.util.loadTransform(StylusBaseToStylusFilePath)
-      if success == True:
-        self.StylusBaseToStylus.SetName("StylusBaseToStylus")
-        slicer.mrmlScene.AddNode(self.StylusBaseToStylus)
-      else:
-        logging.debug('Could not load StylusBaseToStylus from file')
-        self.StylusBaseToStylus = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'StylusBaseToStylus')
-        if not self.StylusBaseToStylus:
-          logging.debug('Failed: Creation of StylusBaseToStylus transform')
-        else:
-          logging.debug('Creation of StylusBaseToStylus transform')
+    self.StylusTipToStylus = self.createVTKMRMLElement('StylusTipToStylus', 'vtkMRMLLinearTransformNode')
+    self.StylusBaseToStylus = self.createVTKMRMLElement('StylusBaseToStylus', 'vtkMRMLLinearTransformNode')
           
     # Setup Needle Transforms    
-    self.NeedleTipToNeedle = slicer.util.getFirstNodeByName('NeedleTipToNeedle', className='vtkMRMLLinearTransformNode')
-    if not self.NeedleTipToNeedle:
-      self.NeedleTipToNeedleFilePath = os.path.join(self.moduleTransformsPath, 'NeedleTipToNeedle.h5')
-      [success, self.NeedleTipToNeedle] = slicer.util.loadTransform(self.NeedleTipToNeedleFilePath)
-      if success == True:
-        self.NeedleTipToNeedle.SetName("NeedleTipToNeedle")
-        slicer.mrmlScene.AddNode(self.NeedleTipToNeedle)
-      else:
-        logging.debug('Could not load NeedleTipToNeedle from file')
-        self.NeedleTipToNeedle = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'NeedleTipToNeedle')
-        if not self.NeedleTipToNeedle:
-          logging.debug('Failed: Creation of NeedleTipToNeedle transform')
-        else:
-          logging.debug('Creation of NeedleTipToNeedle transform')
-          
-    self.NeedleBaseToNeedle = slicer.util.getFirstNodeByName('NeedleBaseToNeedle', className='vtkMRMLLinearTransformNode')
-    if not self.NeedleBaseToNeedle:
-      NeedleBaseToNeedleFilePath = os.path.join(self.moduleTransformsPath, 'NeedleBaseToNeedle.h5')
-      [success, self.NeedleBaseToNeedle] = slicer.util.loadTransform(NeedleBaseToNeedleFilePath)
-      if success == True:
-        self.NeedleBaseToNeedle.SetName("NeedleBaseToNeedle")
-        slicer.mrmlScene.AddNode(self.NeedleBaseToNeedle)
-      else:
-        logging.debug('Could not load NeedleBaseToNeedle from file')
-        self.NeedleBaseToNeedle = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'NeedleBaseToNeedle')
-        if not self.NeedleBaseToNeedle:
-          logging.debug('Failed: Creation of NeedleBaseToNeedle transform')
-        else:
-          logging.debug('Creation of NeedleBaseToNeedle transform')
+    self.NeedleTipToNeedle = self.createVTKMRMLElement('NeedleTipToNeedle', 'vtkMRMLLinearTransformNode')
+    self.NeedleBaseToNeedle = self.createVTKMRMLElement('NeedleBaseToNeedle', 'vtkMRMLLinearTransformNode')
 
-    
     #Setup CT Transforms
-    
-    self.CTToReference = slicer.util.getFirstNodeByName('CTToReference', className='vtkMRMLLinearTransformNode')
-    if not self.CTToReference:
-      CTToReferenceFilePath = os.path.join(self.moduleTransformsPath, 'CTToReference.h5')
-      [success, self.CTToReference] = slicer.util.loadTransform(CTToReferenceFilePath)
-      if success == True:
-        self.CTToReference.SetName("CTToReference")
-        slicer.mrmlScene.AddNode(self.CTToReference)
-      else:
-        logging.debug('Could not load CTToReference from file')
-        self.CTToReference = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'CTToReference')
-        if not self.CTToReference:
-          logging.debug('Failed: Creation of CTToReference transform')
-        else:
-          logging.debug('Creation of CTToReference transform')
+    self.CTToReference = self.createVTKMRMLElement('CTToReference', 'vtkMRMLLinearTransformNode')
 
     # Set up ReferenceToRas
     # TODO confirm
-    self.ReferenceToRas = slicer.util.getFirstNodeByName('ReferenceToRas', className='vtkMRMLLinearTransformNode')
-    if not self.ReferenceToRas:
-      self.ReferenceToRas=slicer.vtkMRMLLinearTransformNode()
-      self.ReferenceToRas.SetName("ReferenceToRas")
-      slicer.mrmlScene.AddNode(self.ReferenceToRas)
-          
+    self.ReferenceToRas = self.createVTKMRMLElement('ReferenceToRas', 'vtkMRMLLinearTransformNode')
           
     # OpenIGTLink transforms
-    
-    self.StylusToReference = slicer.util.getFirstNodeByName('StylusToReference', className='vtkMRMLLinearTransformNode')
+    self.StylusToReference = slicer.util.getFirstNodeByName('vtkMRMLLinearTransformNode', 'StylusToReference')
     if not self.StylusToReference:
-      self.StylusToReference=slicer.vtkMRMLLinearTransformNode()
-      self.StylusToReference.SetName("StylusToReference")
-      slicer.mrmlScene.AddNode(self.StylusToReference)
+      self.StylusToReference = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'StylusToReference')
       
-    self.NeedleToReference = slicer.util.getFirstNodeByName('NeedleToReference', className='vtkMRMLLinearTransformNode')
+    self.NeedleToReference = slicer.util.getFirstNodeByName('vtkMRMLLinearTransformNode', 'NeedleToReference')
     if not self.NeedleToReference:
-      self.NeedleToReference=slicer.vtkMRMLLinearTransformNode()
-      self.NeedleToReference.SetName("NeedleToReference")
-      slicer.mrmlScene.AddNode(self.NeedleToReference)
+      self.NeedleToReference = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'NeedleToReference')
 
 
     # Markups Nodes
 
     # US Calibration Austria Names
-    self.FromProbeToUSFiducialNode = slicer.util.getFirstNodeByName('FromProbeToUSFiducialNode', className='vtkMRMLMarkupsFiducialNode')
-    if not self.FromProbeToUSFiducialNode:
-      self.FromProbeToUSFiducialNode = slicer.vtkMRMLMarkupsFiducialNode()
-      self.FromProbeToUSFiducialNode.SetName('FromProbeToUSFiducialNode')
-      slicer.mrmlScene.AddNode(self.FromProbeToUSFiducialNode)
-
-    self.ToProbeToUSFiducialNode = slicer.util.getFirstNodeByName('ToProbeToUSFiducialNode', className='vtkMRMLMarkupsFiducialNode')
-    if not self.ToProbeToUSFiducialNode:
-      self.ToProbeToUSFiducialNode = slicer.vtkMRMLMarkupsFiducialNode()
-      self.ToProbeToUSFiducialNode.SetName('ToProbeToUSFiducialNode')
-      slicer.mrmlScene.AddNode(self.ToProbeToUSFiducialNode)
-
-    self.FromCTToReferenceFiducialNode = slicer.util.getFirstNodeByName('FromCTToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode')
-    if not self.FromCTToReferenceFiducialNode:
-      self.FromCTToReferenceFiducialNode = slicer.vtkMRMLMarkupsFiducialNode()
-      self.FromCTToReferenceFiducialNode.SetName('FromCTToReferenceFiducials')
-      slicer.mrmlScene.AddNode(self.FromCTToReferenceFiducialNode)
-      
-    self.ToCTToReferenceFiducialNode = slicer.util.getFirstNodeByName('ToCTToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode')
-    if not self.ToCTToReferenceFiducialNode:
-      self.ToCTToReferenceFiducialNode = slicer.vtkMRMLMarkupsFiducialNode()
-      self.ToCTToReferenceFiducialNode.SetName('ToCTToReferenceFiducials')
-      slicer.mrmlScene.AddNode(self.ToCTToReferenceFiducialNode)
-
-
+    self.FromProbeToUSFiducialNode = self.createVTKMRMLElement('FromProbeToUSFiducialNode', 'vtkMRMLMarkupsFiducialNode')
+    self.ToProbeToUSFiducialNode = self.createVTKMRMLElement('ToProbeToUSFiducialNode', 'vtkMRMLMarkupsFiducialNode')
+    self.FromCTToReferenceFiducialNode = self.createVTKMRMLElement('FromCTToReferenceFiducials', 'vtkMRMLMarkupsFiducialNode')
+    self.ToCTToReferenceFiducialNode = self.createVTKMRMLElement('ToCTToReferenceFiducials', 'vtkMRMLMarkupsFiducialNode')
 
     # Build Transform Tree
 
@@ -339,6 +181,22 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     self.NeedleModel_NeedleTip.SetAndObserveTransformNodeID(self.NeedleTipToNeedle.GetID())
     self.NeedleBaseToNeedle.SetAndObserveTransformNodeID(self.NeedleToReference.GetID())
     self.CTToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
+
+  def createVTKMRMLElement(self, transformName, vtkMRMLClassName):
+    vtkMRMLElement = slicer.util.getFirstNodeByName(transformName, className=vtkMRMLClassName)
+    if not vtkMRMLElement:
+      fileName = transformName +'.h5'
+      vtkMRMLElementPath = os.path.join(self.moduleTransformsPath, fileName)
+      try:
+        [success,vtkMRMLElement] = slicer.util.loadTransform(vtkMRMLElementPath)
+        vtkMRMLElement.SetName(transformName)
+        slicer.mrmlScene.AddNode(vtkMRMLElement)
+      except:
+        logging.debug('Could not load ProbeToUS from file')
+        vtkMRMLElement = slicer.mrmlScene.AddNewNodeByClass(vtkMRMLClassName, transformName)
+
+    return vtkMRMLElement
+
 
   def cleanup(self):
     pass
@@ -436,8 +294,7 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
       print("Invalid Input Value")
     
     layoutManager = slicer.app.layoutManager()
-    layoutManager.setLayout(requestedID)  
-
+    layoutManager.setLayout(requestedID)
 
   def stylusPivotCalibration(self):
     logging.debug('stylusPivotCalibration')
@@ -454,19 +311,22 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     
     self.stylusCalibration()
 
-
   def stylusCalibration(self):
     logging.debug('stylusCalibration')
-    
+
     self.toolCalibrationResultNode = self.StylusTipToStylus
-    self.toolCalibrationResultName = 'StylusTipToStylus'
     self.toolToReferenceNode = self.StylusToReference
-    self.toolToReferenceTransformName = 'StylusToReference'
     self.toolBeingCalibrated = 'Stylus'
     self.toolCalibrationToolBaseNode = self.StylusBaseToStylus
     self.toolCalibrationModel = self.StylusModel_StylusTip
-    
-    self.toolCalibrationStart()
+
+    self.ui.needlePivotCalibrationButton.setEnabled(False)
+    self.ui.needleSpinCalibrationButton.setEnabled(False)
+    self.ui.stylusPivotCalibrationButton.setEnabled(False)
+    self.ui.stylusSpinCalibrationButton.setEnabled(False)
+
+    self.toolCalibrationStopTime = time.time() + float(5)
+    self.logic.toolCalibration(self.toolToReferenceNode, self.toolCalibrationTimer)
 
 
   def needleSpinCalibration(self):
@@ -489,29 +349,18 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     logging.debug('needleCalibration')
     
     self.toolCalibrationResultNode = self.NeedleTipToNeedle
-    self.toolCalibrationResultName = 'NeedleTipToNeedle'
     self.toolToReferenceNode = self.NeedleToReference
-    self.toolToReferenceTransformName = 'NeedleToReference'
     self.toolBeingCalibrated = 'Needle'
     self.toolCalibrationToolBaseNode = self.NeedleBaseToNeedle
     self.toolCalibrationModel = self.NeedleModel_NeedleTip
-    
-    self.toolCalibrationStart()
-
-
-  def toolCalibrationStart(self):
-    logging.debug('toolCalibrationStart')
-    
-    self.pivotCalibrationLogic.SetAndObserveTransformNode(self.toolToReferenceNode)
     
     self.ui.needlePivotCalibrationButton.setEnabled(False)
     self.ui.needleSpinCalibrationButton.setEnabled(False)
     self.ui.stylusPivotCalibrationButton.setEnabled(False)
     self.ui.stylusSpinCalibrationButton.setEnabled(False)
-    
-    self.toolCalibrationStopTime = time.time()+float(5)
-    self.pivotCalibrationLogic.SetRecordingState(True)
-    self.toolCalibrationTimeout()
+
+    self.toolCalibrationStopTime = time.time() + float(5)
+    self.logic.toolCalibration(self.toolToReferenceNode, self.toolCalibrationTimer)
 
 
   def toolCalibrationTimeout(self):
@@ -524,94 +373,39 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
       self.ui.stylusCalibrationErrorLabel.setText("")
       self.ui.stylusCalibrationCountdownLabel.setText("Calibrating for {0:.0f} more seconds".format(self.toolCalibrationStopTime - time.time()))
     
-    if(time.time()<self.toolCalibrationStopTime):
-      # continue if calibration time isn't finished
-      self.toolCalibrationTimer.start()
-    else:
+    if (time.time() >= self.toolCalibrationStopTime):
+      self.toolCalibrationTimer.stop()
+
+      self.ui.needlePivotCalibrationButton.setEnabled(True)
+      self.ui.needleSpinCalibrationButton.setEnabled(True)
+      self.ui.stylusPivotCalibrationButton.setEnabled(True)
+      self.ui.stylusSpinCalibrationButton.setEnabled(True)
+
       # calibration completed
-      self.toolCalibrationStop()
+      if self.toolCalibrationMode == self.PIVOT_CALIBRATION:
 
+        calibrationStatus, calibrationError, toolLength = self.logic.pivotCalibratiion( self.calibrationErrorThresholdMm, self.toolCalibrationResultNode, self.toolCalibrationToolBaseNode)
 
-  def toolCalibrationStop(self):
-    logging.debug('toolCalibrationStop')
-    
-    self.ui.needlePivotCalibrationButton.setEnabled(True)
-    self.ui.needleSpinCalibrationButton.setEnabled(True)
-    self.ui.stylusPivotCalibrationButton.setEnabled(True)
-    self.ui.stylusSpinCalibrationButton.setEnabled(True)
-      
-    if self.toolCalibrationMode == self.PIVOT_CALIBRATION:
-      calibrationSuccess = self.pivotCalibrationLogic.ComputePivotCalibration()
-    else:
-      calibrationSuccess = self.pivotCalibrationLogic.ComputeSpinCalibration()
-      
-    if not calibrationSuccess:
-      if self.toolBeingCalibrated == 'Needle':
-        self.ui.needleCalibrationCountdownLabel.setText("Calibration failed: ")
-        self.ui.needleCalibrationErrorLabel.setText(self.pivotCalibrationLogic.GetErrorText())
-      elif self.toolBeingCalibrated == 'Stylus':
-        self.ui.stylusCalibrationCountdownLabel.setText("Calibration failed: ")
-        self.ui.stylusCalibrationErrorLabel.setText(self.pivotCalibrationLogic.GetErrorText())
-        
-      self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
-      return
-      
-    if self.toolCalibrationMode == self.PIVOT_CALIBRATION:
-      if(self.pivotCalibrationLogic.GetPivotRMSE() >= float(self.calibrationErrorThresholdMm)):
+        self.updateDisplayedToolLength(toolLength)
+
         if self.toolBeingCalibrated == 'Needle':
-          self.ui.needleCalibrationCountdownLabel.setText("Pivot Calibration failed:")
-          self.ui.needleCalibrationErrorLabel.setText("Error = {0:.2f} mm").format(self.pivotCalibrationLogic.GetPivotRMSE())
-        elif self.toolBeingCalibrated == 'Stylus':
-          self.ui.stylusCalibrationCountdownLabel.setText("Pivot Calibration failed:")
-          self.ui.stylusCalibrationErrorLabel.setText("Error = {0:.2f} mm").format(self.pivotCalibrationLogic.GetPivotRMSE())
-          
-        self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
-        return
-    else:
-      if(self.pivotCalibrationLogic.GetSpinRMSE() >= float(self.calibrationErrorThresholdMm)):
+          self.ui.needleCalibrationErrorLabel.setText(calibrationStatus)
+          self.ui.needleCalibrationCountdownLabel.setText(calibrationError)
+        else:
+          self.ui.stylusCalibrationErrorLabel.setText(calibrationStatus)
+          self.ui.stylusCalibrationCountdownLabel.setText(calibrationError)
+      else:
+        calibrationStatus, calibrationError = self.logic.spinCalibratiion(self.calibrationErrorThresholdMm, self.toolCalibrationResultNode)
+
         if self.toolBeingCalibrated == 'Needle':
-          self.ui.needleCalibrationCountdownLabel.setText("Spin calibration failed:")
-          self.ui.needleCalibrationErrorLabel.setText("Error = {0:.2f} mm").format(self.pivotCalibrationLogic.GetSpinRMSE())
-        elif self.toolBeingCalibrated == 'Stylus':
-          self.ui.stylusCalibrationCountdownLabel.setText("Spin calibration failed:")
-          self.ui.stylusCalibrationErrorLabel.setText("Error = {0:.2f} mm").format(self.pivotCalibrationLogic.GetSpinRMSE())
-          
-        self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
-        return
-      
-    toolTipToToolMatrix = vtk.vtkMatrix4x4()
-    self.pivotCalibrationLogic.GetToolTipToToolMatrix(toolTipToToolMatrix)
-    self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
-    self.toolCalibrationResultNode.SetMatrixTransformToParent(toolTipToToolMatrix)
-    slicer.util.saveNode(self.toolCalibrationResultNode, os.path.join(self.moduleTransformsPath, self.toolCalibrationResultName + ".h5"))
-    
-    if self.toolCalibrationMode == self.PIVOT_CALIBRATION:
-      if self.toolBeingCalibrated == 'Needle':
-        self.ui.needleCalibrationCountdownLabel.setText("Pivot calibration completed")
-        self.ui.needleCalibrationErrorLabel.setText("Error = {0:.2f} mm".format(self.pivotCalibrationLogic.GetPivotRMSE()))
-      elif self.toolBeingCalibrated == 'Stylus':
-        self.ui.stylusCalibrationCountdownLabel.setText("Pivot calibration completed")
-        self.ui.stylusCalibrationErrorLabel.setText("Error = {0:.2f} mm".format(self.pivotCalibrationLogic.GetPivotRMSE()))
-        
-      self.updateDisplayedToolLength()
-      logging.debug("Pivot calibration completed. Tool: {0}. RMSE = {1:.2f} mm".format(self.toolCalibrationResultNode.GetName(), self.pivotCalibrationLogic.GetPivotRMSE()))
-    else:
-      if self.toolBeingCalibrated == 'Needle':
-        self.ui.needleCalibrationCountdownLabel.setText("Spin calibration completed.")
-        self.ui.needleCalibrationErrorLabel.setText("Error = {0:.2f} mm".format(self.pivotCalibrationLogic.GetSpinRMSE()))
-      elif self.toolBeingCalibrated == 'Stylus':
-        self.ui.stylusCalibrationCountdownLabel.setText("Spin calibration completed.")
-        self.ui.stylusCalibrationErrorLabel.setText("Error = {0:.2f} mm".format(self.pivotCalibrationLogic.GetSpinRMSE()))
-        
-      logging.debug("Spin calibration completed. Tool: {0}. RMSE = {1:.2f} mm".format(self.toolCalibrationResultNode.GetName(), self.pivotCalibrationLogic.GetSpinRMSE()))
+          self.ui.needleCalibrationErrorLabel.setText(calibrationStatus)
+          self.ui.needleCalibrationCountdownLabel.setText(calibrationError)
+        else:
+          self.ui.stylusCalibrationErrorLabel.setText(calibrationStatus)
+          self.ui.stylusCalibrationCountdownLabel.setText(calibrationError)
 
-
-  def updateDisplayedToolLength(self):
+  def updateDisplayedToolLength(self, toolLength):
     logging.debug("updateDisplayedToolLength")
-    
-    toolTipToToolBaseTransform = vtk.vtkMatrix4x4()
-    self.toolCalibrationResultNode.GetMatrixTransformToNode(self.toolCalibrationToolBaseNode, toolTipToToolBaseTransform)
-    toolLength = int(math.sqrt(toolTipToToolBaseTransform.GetElement(0,3)**2+toolTipToToolBaseTransform.GetElement(1,3)**2+toolTipToToolBaseTransform.GetElement(2,3)**2))
     # Update the needle model
     slicer.modules.createmodels.logic().CreateNeedle(toolLength,1.0, 1.5, False, self.toolCalibrationModel)
 
@@ -710,6 +504,62 @@ class LiverBiopsyLogic(ScriptedLoadableModuleLogic):
   Uses ScriptedLoadableModuleLogic base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
+
+  def toolCalibration(self, transformNodeToolToReference, qtTimer):
+    logging.debug('toolCalibration')
+
+    self.pivotCalibrationLogic = slicer.modules.pivotcalibration.logic()
+    self.pivotCalibrationLogic.SetAndObserveTransformNode(transformNodeToolToReference)
+
+    qtTimer.start()
+    self.pivotCalibrationLogic.SetRecordingState(True)
+
+  def pivotCalibration(self, calibrationErrorThresholdMm, toolCalibrationResultNode, toolCalibrationToolBaseNode):
+    logging.debug('pivotCalibration')
+
+    self.pivotCalibrationLogic.SetRecordingState(False)
+
+    calibrationSuccess = self.pivotCalibrationLogic.ComputePivotCalibration()
+    if not calibrationSuccess:
+      self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
+      return "Calibration failed: ", self.pivotCalibrationLogic.GetErrorText(), 0
+    else:
+      if (self.pivotCalibrationLogic.GetPivotRMSE() >= float(calibrationErrorThresholdMm)):
+        self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
+        return "Calibration failed:", "Error = {0:.2f} mm".format(self.pivotCalibrationLogic.GetPivotRMSE()), 0
+      else:
+        toolTipToToolMatrix = vtk.vtkMatrix4x4()
+        self.pivotCalibrationLogic.GetToolTipToToolMatrix(toolTipToToolMatrix)
+        self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
+        toolCalibrationResultNode.SetMatrixTransformToParent(toolTipToToolMatrix)
+
+        toolTipToToolBaseTransform = vtk.vtkMatrix4x4()
+        toolCalibrationResultNode.GetMatrixTransformToNode(toolCalibrationToolBaseNode, toolTipToToolBaseTransform)
+        toolLength = int(math.sqrt(toolTipToToolBaseTransform.GetElement(0, 3) ** 2 + toolTipToToolBaseTransform.GetElement(1,3) ** 2 + toolTipToToolBaseTransform.GetElement(2, 3) ** 2))
+
+        return "Calibration completed", "Error = {0:.2f} mm".format(self.pivotCalibrationLogic.GetPivotRMSE()), toolLength
+
+
+  def spinCalibration(self, calibrationErrorThresholdMm, toolCalibrationResultNode):
+    logging.debug('spinCalibration')
+
+    self.pivotCalibrationLogic.SetRecordingState(False)
+
+    calibrationSuccess = self.pivotCalibrationLogic.ComputeSpinCalibration()
+    if not calibrationSuccess:
+      self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
+      return "Calibration failed: ", self.pivotCalibrationLogic.GetErrorText()
+    else:
+      if (self.pivotCalibrationLogic.GetSpinRMSE() >= float(calibrationErrorThresholdMm)):
+        self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
+        return "Calibration failed:", "Error = {0:.2f} mm".format(self.pivotCalibrationLogic.GetSpinRMSE())
+      else:
+        toolTipToToolMatrix = vtk.vtkMatrix4x4()
+        self.pivotCalibrationLogic.GetToolTipToToolMatrix(toolTipToToolMatrix)
+        self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
+        toolCalibrationResultNode.SetMatrixTransformToParent(toolTipToToolMatrix)
+
+        return "Calibration completed", "Error = {0:.2f} mm".format(self.pivotCalibrationLogic.GetSpinRMSE())
   
   def landmarkRegistration(self, fromMarkupsNode, toMarkupsNode, outputTransformNode):
     logging.debug('landmarkRegistration')
