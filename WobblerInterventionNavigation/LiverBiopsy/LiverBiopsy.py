@@ -147,13 +147,9 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
     self.ReferenceToRas = self.createVTKMRMLElement('ReferenceToRas', 'vtkMRMLLinearTransformNode')
           
     # OpenIGTLink transforms
-    self.StylusToReference = slicer.util.getFirstNodeByName('vtkMRMLLinearTransformNode', 'StylusToReference')
-    if not self.StylusToReference:
-      self.StylusToReference = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'StylusToReference')
+    self.StylusToReference =  self.createVTKMRMLElement('StylusToReference', 'vtkMRMLLinearTransformNode')
       
-    self.NeedleToReference = slicer.util.getFirstNodeByName('vtkMRMLLinearTransformNode', 'NeedleToReference')
-    if not self.NeedleToReference:
-      self.NeedleToReference = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'NeedleToReference')
+    self.NeedleToReference =  self.createVTKMRMLElement('NeedleToReference', 'vtkMRMLLinearTransformNode')
 
 
     # Markups Nodes
@@ -384,25 +380,26 @@ class LiverBiopsyWidget(ScriptedLoadableModuleWidget):
       # calibration completed
       if self.toolCalibrationMode == self.PIVOT_CALIBRATION:
 
-        calibrationStatus, calibrationError, toolLength = self.logic.pivotCalibratiion( self.calibrationErrorThresholdMm, self.toolCalibrationResultNode, self.toolCalibrationToolBaseNode)
+        calibrationStatus, calibrationError, toolLength = self.logic.pivotCalibration( self.calibrationErrorThresholdMm, self.toolCalibrationResultNode, self.toolCalibrationToolBaseNode)
 
         self.updateDisplayedToolLength(toolLength)
 
         if self.toolBeingCalibrated == 'Needle':
-          self.ui.needleCalibrationErrorLabel.setText(calibrationStatus)
-          self.ui.needleCalibrationCountdownLabel.setText(calibrationError)
+          self.ui.needleCalibrationErrorLabel.setText(calibrationError)
+          self.ui.needleCalibrationCountdownLabel.setText(calibrationStatus)
         else:
-          self.ui.stylusCalibrationErrorLabel.setText(calibrationStatus)
-          self.ui.stylusCalibrationCountdownLabel.setText(calibrationError)
+          self.ui.stylusCalibrationErrorLabel.setText(calibrationError)
+          self.ui.stylusCalibrationCountdownLabel.setText(calibrationStatus)
       else:
-        calibrationStatus, calibrationError = self.logic.spinCalibratiion(self.calibrationErrorThresholdMm, self.toolCalibrationResultNode)
+        calibrationStatus, calibrationError = self.logic.spinCalibration(self.calibrationErrorThresholdMm, self.toolCalibrationResultNode)
 
         if self.toolBeingCalibrated == 'Needle':
-          self.ui.needleCalibrationErrorLabel.setText(calibrationStatus)
-          self.ui.needleCalibrationCountdownLabel.setText(calibrationError)
+          self.ui.needleCalibrationErrorLabel.setText(calibrationError)
+          self.ui.needleCalibrationCountdownLabel.setText(calibrationStatus)
         else:
-          self.ui.stylusCalibrationErrorLabel.setText(calibrationStatus)
-          self.ui.stylusCalibrationCountdownLabel.setText(calibrationError)
+          self.ui.stylusCalibrationErrorLabel.setText(calibrationError)
+          self.ui.stylusCalibrationCountdownLabel.setText(calibrationStatus)
+
 
   def updateDisplayedToolLength(self, toolLength):
     logging.debug("updateDisplayedToolLength")

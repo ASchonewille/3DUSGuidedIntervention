@@ -53,7 +53,7 @@
       <string>Stylus Calibration</string>
      </property>
      <property name="collapsed">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <layout class="QFormLayout" name="formLayout_12">
       <item row="1" column="1">
@@ -102,7 +102,7 @@
       <string>Needle Calibration</string>
      </property>
      <property name="collapsed">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <layout class="QFormLayout" name="formLayout_3">
       <item row="0" column="1">
@@ -122,7 +122,7 @@
       <item row="2" column="1">
        <widget class="QLabel" name="needleCalibrationCountdownLabel">
         <property name="enabled">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
         <property name="text">
          <string/>
@@ -135,7 +135,7 @@
       <item row="3" column="1">
        <widget class="QLabel" name="needleCalibrationErrorLabel">
         <property name="enabled">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
         <property name="text">
          <string/>

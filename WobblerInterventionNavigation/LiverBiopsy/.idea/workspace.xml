@@ -2,8 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="996d8c85-c44c-4ad9-8ceb-f1b2973f15db" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/../CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/LiverBiopsy.py" beforeDir="false" afterPath="$PROJECT_DIR$/LiverBiopsy.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Resources/Transforms/NeedleTipToNeedle.h5" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Resources/Transforms/StylusTipToStylus.h5" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -20,7 +22,7 @@
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../LiverNav" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
   </component>
   <component name="StructureViewFactory">
     <option name="AUTOSCROLL_FROM_SOURCE" value="true" />
