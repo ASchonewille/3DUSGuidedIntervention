@@ -24,6 +24,7 @@ add_subdirectory(LiverBiopsy)
 add_subdirectory(LiverBiopsy)
 add_subdirectory(Validation)
 add_subdirectory(LiverNav)
+add_subdirectory(AbdominalBiopsyNavigation)
 ## NEXT_MODULE
 
 #-----------------------------------------------------------------------------

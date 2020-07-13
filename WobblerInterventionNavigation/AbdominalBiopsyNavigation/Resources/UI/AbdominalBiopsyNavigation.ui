@@ -1,0 +1,572 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>AbdominalBiopsyNavigation</class>
+ <widget class="qMRMLWidget" name="AbdominalBiopsyNavigation">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>487</width>
+    <height>899</height>
+   </rect>
+  </property>
+  <layout class="QFormLayout" name="formLayout">
+   <item row="0" column="0">
+    <widget class="QLabel" name="parameterSetLabel">
+     <property name="text">
+      <string>Paremeter set: </string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="qMRMLNodeComboBox" name="parameterNodeSelector">
+     <property name="toolTip">
+      <string>Pick node to store parameter set</string>
+     </property>
+     <property name="nodeTypes">
+      <stringlist>
+       <string>vtkMRMLScriptedModuleNode</string>
+      </stringlist>
+     </property>
+     <property name="showHidden">
+      <bool>true</bool>
+     </property>
+     <property name="baseName">
+      <string>AbdominalBiopsyNavigation</string>
+     </property>
+     <property name="renameEnabled">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="2">
+    <widget class="ctkCollapsibleGroupBox" name="ToolCalibrationBox">
+     <property name="title">
+      <string>Tool Calibration</string>
+     </property>
+     <property name="collapsed">
+      <bool>true</bool>
+     </property>
+     <layout class="QFormLayout" name="formLayout_2">
+      <item row="0" column="0" colspan="2">
+       <widget class="ctkCollapsibleGroupBox" name="StylusCalibrationBox">
+        <property name="title">
+         <string>Stylus Calibration</string>
+        </property>
+        <property name="collapsed">
+         <bool>true</bool>
+        </property>
+        <layout class="QFormLayout" name="formLayout_4">
+         <item row="1" column="1">
+          <widget class="QPushButton" name="stylusSpinCalibrationButton">
+           <property name="text">
+            <string>Start Spin Calibration</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QPushButton" name="stylusPivotCalibrationButton">
+           <property name="text">
+            <string>Start Pivot Calibration</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="1">
+          <widget class="QLabel" name="stylusCalibrationErrorLabel">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QLabel" name="stylusCalibrationCountdownLabel">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="ctkCollapsibleGroupBox" name="NeedleCalibrationBox">
+        <property name="title">
+         <string>Needle Calibration</string>
+        </property>
+        <property name="collapsed">
+         <bool>true</bool>
+        </property>
+        <layout class="QFormLayout" name="formLayout_5">
+         <item row="1" column="1">
+          <widget class="QPushButton" name="needleSpinCalibrationButton">
+           <property name="text">
+            <string>Start Spin Calibration</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QPushButton" name="needlePivotCalibrationButton">
+           <property name="text">
+            <string>Start Pivot Calibration</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0" colspan="2">
+          <widget class="QLabel" name="needleCalibrationErrorLabel">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0" colspan="2">
+          <widget class="QLabel" name="needleCalibrationCountdownLabel">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
+       <widget class="ctkCollapsibleGroupBox" name="ProbeCalibrationBox">
+        <property name="title">
+         <string>Probe Calibration</string>
+        </property>
+        <property name="collapsed">
+         <bool>false</bool>
+        </property>
+        <layout class="QFormLayout" name="formLayout_6">
+         <item row="2" column="1">
+          <widget class="QPushButton" name="USCalibrationButton">
+           <property name="text">
+            <string>Calculate Calibration</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QLabel" name="USCalibrationErrorLabel">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="ctkCollapsibleGroupBox" name="USFiducialsBox">
+           <property name="title">
+            <string>US Fiducails</string>
+           </property>
+           <property name="collapsed">
+            <bool>true</bool>
+           </property>
+           <layout class="QFormLayout" name="formLayout_8">
+            <item row="0" column="0" colspan="2">
+             <widget class="qSlicerSimpleMarkupsWidget" name="toProbeToUSFiducialWidget">
+              <property name="nodeSelectorVisible">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="ctkCollapsibleGroupBox" name="ProbeFiducialsBox">
+           <property name="title">
+            <string>Probe Fidudcials</string>
+           </property>
+           <property name="collapsed">
+            <bool>true</bool>
+           </property>
+           <layout class="QFormLayout" name="formLayout_7">
+            <item row="0" column="0" colspan="2">
+             <widget class="qSlicerSimpleMarkupsWidget" name="fromProbeToUSFiducialWidget">
+              <property name="nodeSelectorVisible">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="2">
+    <widget class="ctkCollapsibleGroupBox" name="CTRegistrationBox">
+     <property name="title">
+      <string>CT Registration</string>
+     </property>
+     <property name="collapsed">
+      <bool>false</bool>
+     </property>
+     <layout class="QFormLayout" name="formLayout_9">
+      <item row="0" column="1">
+       <widget class="ctkCollapsibleGroupBox" name="CTFiducialBox">
+        <property name="title">
+         <string>CT Fiducials</string>
+        </property>
+        <layout class="QFormLayout" name="formLayout_10">
+         <item row="0" column="0" colspan="2">
+          <widget class="qSlicerSimpleMarkupsWidget" name="fromCTToReferenceFiducialWidget">
+           <property name="enterPlaceModeOnNodeChange">
+            <bool>true</bool>
+           </property>
+           <property name="jumpToSliceEnabled">
+            <bool>false</bool>
+           </property>
+           <property name="nodeSelectorVisible">
+            <bool>false</bool>
+           </property>
+           <property name="optionsVisible">
+            <bool>false</bool>
+           </property>
+           <property name="defaultNodeColor">
+            <color>
+             <red>85</red>
+             <green>255</green>
+             <blue>0</blue>
+            </color>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QPushButton" name="initialCTRegistrationButton">
+        <property name="text">
+         <string>Calculate Registration</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLabel" name="initialCTRegistrationErrorLabel">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="ctkCollapsibleGroupBox" name="ReferenceFiducialBox">
+        <property name="title">
+         <string>Reference Fiducials</string>
+        </property>
+        <layout class="QFormLayout" name="formLayout_11">
+         <item row="0" column="0" colspan="2">
+          <widget class="qSlicerSimpleMarkupsWidget" name="toCTToReferenceFiducialWidget">
+           <property name="nodeSelectorVisible">
+            <bool>false</bool>
+           </property>
+           <property name="defaultNodeColor">
+            <color>
+             <red>255</red>
+             <green>170</green>
+             <blue>0</blue>
+            </color>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" colspan="2">
+          <widget class="QPushButton" name="placeToCTToReferenceFiducialButton">
+           <property name="text">
+            <string>Place Fiducial Using Stylus</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="2">
+    <widget class="ctkCollapsibleGroupBox" name="USToUSCalibrationBox">
+     <property name="title">
+      <string>US To US Registration</string>
+     </property>
+     <property name="collapsed">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0" colspan="2">
+    <widget class="ctkCollapsibleGroupBox" name="SettingsBox">
+     <property name="title">
+      <string>Settings</string>
+     </property>
+     <property name="collapsed">
+      <bool>false</bool>
+     </property>
+     <layout class="QFormLayout" name="formLayout_13">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="cursor">
+         <cursorShape>UpArrowCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>Save Location:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="ctkPathLineEdit" name="PathLineEdit"/>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="QPushButton" name="saveButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Save Slicer Scene</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="7" column="0">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="1" column="0" colspan="2">
+    <widget class="ctkCollapsibleGroupBox" name="ConnectPLUSBox">
+     <property name="title">
+      <string>Connect to PLUS</string>
+     </property>
+     <property name="collapsed">
+      <bool>true</bool>
+     </property>
+     <layout class="QFormLayout" name="formLayout_3">
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="plusHostandPort">
+        <property name="text">
+         <string>localhost:18944</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Set the Plus Server Host and Name Port:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="QPushButton" name="connectPLUSButton">
+        <property name="text">
+         <string>Connect to PLUS</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="5" column="0" colspan="2">
+    <widget class="ctkCollapsibleGroupBox" name="NavigationBox">
+     <property name="title">
+      <string>Navigation</string>
+     </property>
+     <property name="collapsed">
+      <bool>true</bool>
+     </property>
+     <layout class="QFormLayout" name="formLayout_12">
+      <item row="0" column="1">
+       <widget class="QComboBox" name="layoutComboBox">
+        <item>
+         <property name="text">
+          <string>Conventional View</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Red Slice View</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>RGBO3D View</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Layout:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="QPushButton" name="freezeUltrasoundButton">
+        <property name="text">
+         <string>Freeze Ultrasound</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ctkCollapsibleGroupBox</class>
+   <extends>QGroupBox</extends>
+   <header>ctkCollapsibleGroupBox.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ctkPathLineEdit</class>
+   <extends>QWidget</extends>
+   <header>ctkPathLineEdit.h</header>
+  </customwidget>
+  <customwidget>
+   <class>qMRMLNodeComboBox</class>
+   <extends>QWidget</extends>
+   <header>qMRMLNodeComboBox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>qMRMLWidget</class>
+   <extends>QWidget</extends>
+   <header>qMRMLWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>qSlicerWidget</class>
+   <extends>QWidget</extends>
+   <header>qSlicerWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>qSlicerSimpleMarkupsWidget</class>
+   <extends>qSlicerWidget</extends>
+   <header>qSlicerSimpleMarkupsWidget.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>AbdominalBiopsyNavigation</sender>
+   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
+   <receiver>parameterNodeSelector</receiver>
+   <slot>setMRMLScene(vtkMRMLScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>28</x>
+     <y>267</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>192</x>
+     <y>18</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>AbdominalBiopsyNavigation</sender>
+   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
+   <receiver>fromCTToReferenceFiducialWidget</receiver>
+   <slot>setMRMLScene(vtkMRMLScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>243</x>
+     <y>449</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>246</x>
+     <y>244</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>AbdominalBiopsyNavigation</sender>
+   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
+   <receiver>toCTToReferenceFiducialWidget</receiver>
+   <slot>setMRMLScene(vtkMRMLScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>243</x>
+     <y>449</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>246</x>
+     <y>491</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>AbdominalBiopsyNavigation</sender>
+   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
+   <receiver>fromProbeToUSFiducialWidget</receiver>
+   <slot>setMRMLScene(vtkMRMLScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>243</x>
+     <y>449</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>246</x>
+     <y>120</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>AbdominalBiopsyNavigation</sender>
+   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
+   <receiver>toProbeToUSFiducialWidget</receiver>
+   <slot>setMRMLScene(vtkMRMLScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>243</x>
+     <y>449</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>246</x>
+     <y>117</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
