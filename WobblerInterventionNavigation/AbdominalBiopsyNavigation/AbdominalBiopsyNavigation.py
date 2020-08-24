@@ -107,18 +107,17 @@ class AbdominalBiopsyNavigationWidget(ScriptedLoadableModuleWidget, VTKObservati
     self.ui.toProbeToUSFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('ToProbeToUSFiducialNode', className='vtkMRMLMarkupsFiducialNode'))
     self.ui.toProbeToUSFiducialWidget.setNodeColor(qt.QColor(103, 0, 225, 255))
 
-    self.ui.fromCTToReferenceFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('FromCTToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode'))
+    self.ui.fromCTToReferenceFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('FromCTToReferenceFiducialNode', className='vtkMRMLMarkupsFiducialNode'))
     self.ui.fromCTToReferenceFiducialWidget.setNodeColor(qt.QColor(85, 255, 0, 255))
-    self.ui.toCTToReferenceFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('ToCTToReferenceFiducials', className='vtkMRMLMarkupsFiducialNode'))
+    self.ui.toCTToReferenceFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName('ToCTToReferenceFiducialNode', className='vtkMRMLMarkupsFiducialNode'))
     self.ui.toCTToReferenceFiducialWidget.setNodeColor(qt.QColor(255, 170, 0, 255))
 
     # These connections ensure that whenever user changes some settings on the GUI, that is saved in the MRML scene
     # (in the selected parameter node).
-    self.ui.inputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
-    self.ui.outputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
-    self.ui.imageThresholdSliderWidget.connect("valueChanged(double)", self.updateParameterNodeFromGUI)
-    self.ui.invertOutputCheckBox.connect("toggled(bool)", self.updateParameterNodeFromGUI)
-    self.invertedOutputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
+    self.ui.fromCTToReferenceFiducialWidget.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
+    self.ui.toCTToReferenceFiducialWidget.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
+    self.ui.fromProbeToUSFiducialWidget.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
+    self.ui.toProbeToUSFiducialWidget.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
 
     # Initial GUI update
     self.updateGUIFromParameterNode()
@@ -159,11 +158,9 @@ class AbdominalBiopsyNavigationWidget(ScriptedLoadableModuleWidget, VTKObservati
 
     # Setup Stylus Transforms
     self.StylusTipToStylus = self.createVTKMRMLElement('StylusTipToStylus', 'vtkMRMLLinearTransformNode')
-    self.StylusBaseToStylus = self.createVTKMRMLElement('StylusBaseToStylus', 'vtkMRMLLinearTransformNode')
 
     # Setup Needle Transforms
     self.NeedleTipToNeedle = self.createVTKMRMLElement('NeedleTipToNeedle', 'vtkMRMLLinearTransformNode')
-    self.NeedleBaseToNeedle = self.createVTKMRMLElement('NeedleBaseToNeedle', 'vtkMRMLLinearTransformNode')
 
     # Setup CT Transforms
     self.CTToReference = self.createVTKMRMLElement('CTToReference', 'vtkMRMLLinearTransformNode')
@@ -182,8 +179,8 @@ class AbdominalBiopsyNavigationWidget(ScriptedLoadableModuleWidget, VTKObservati
     # US Calibration Austria Names
     self.FromProbeToUSFiducialNode = self.createVTKMRMLElement('FromProbeToUSFiducialNode', 'vtkMRMLMarkupsFiducialNode')
     self.ToProbeToUSFiducialNode = self.createVTKMRMLElement('ToProbeToUSFiducialNode', 'vtkMRMLMarkupsFiducialNode')
-    self.FromCTToReferenceFiducialNode = self.createVTKMRMLElement('FromCTToReferenceFiducials', 'vtkMRMLMarkupsFiducialNode')
-    self.ToCTToReferenceFiducialNode = self.createVTKMRMLElement('ToCTToReferenceFiducials', 'vtkMRMLMarkupsFiducialNode')
+    self.FromCTToReferenceFiducialNode = self.createVTKMRMLElement('FromCTToReferenceFiducialNode', 'vtkMRMLMarkupsFiducialNode')
+    self.ToCTToReferenceFiducialNode = self.createVTKMRMLElement('ToCTToReferenceFiducialNode', 'vtkMRMLMarkupsFiducialNode')
 
     # Build Transform Tree
 
@@ -196,11 +193,9 @@ class AbdominalBiopsyNavigationWidget(ScriptedLoadableModuleWidget, VTKObservati
     self.StylusToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
     self.StylusTipToStylus.SetAndObserveTransformNodeID(self.StylusToReference.GetID())
     self.StylusModel_StylusTip.SetAndObserveTransformNodeID(self.StylusTipToStylus.GetID())
-    self.StylusBaseToStylus.SetAndObserveTransformNodeID(self.StylusToReference.GetID())
     self.NeedleToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
     self.NeedleTipToNeedle.SetAndObserveTransformNodeID(self.NeedleToReference.GetID())
     self.NeedleModel_NeedleTip.SetAndObserveTransformNodeID(self.NeedleTipToNeedle.GetID())
-    self.NeedleBaseToNeedle.SetAndObserveTransformNodeID(self.NeedleToReference.GetID())
     self.CTToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
 
   def createVTKMRMLElement(self, transformName, vtkMRMLClassName):
@@ -274,33 +269,23 @@ class AbdominalBiopsyNavigationWidget(ScriptedLoadableModuleWidget, VTKObservati
     # Need to temporarily block signals to prevent infinite recursion (MRML node update triggers
     # GUI update, which triggers MRML node update, which triggers GUI update, ...)
     # TODO add all ui elements that update mrml node
-    wasBlocked = self.ui.inputSelector.blockSignals(True)
-    self.ui.inputSelector.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume"))
-    self.ui.inputSelector.blockSignals(wasBlocked)
+    wasBlocked = self.ui.fromCTToReferenceFiducialWidget.blockSignals(True)
+    self.ui.fromCTToReferenceFiducialWidget.setCurrentNode(self._parameterNode.GetNodeReference("FromCTToReferenceFiducialNode"))
+    self.ui.fromCTToReferenceFiducialWidget.blockSignals(wasBlocked)
 
-    wasBlocked = self.ui.outputSelector.blockSignals(True)
-    self.ui.outputSelector.setCurrentNode(self._parameterNode.GetNodeReference("OutputVolume"))
-    self.ui.outputSelector.blockSignals(wasBlocked)
+    wasBlocked = self.ui.toCTToReferenceFiducialWidget.blockSignals(True)
+    self.ui.toCTToReferenceFiducialWidget.setCurrentNode(self._parameterNode.GetNodeReference("ToCTToReferenceFiducialNode"))
+    self.ui.toCTToReferenceFiducialWidget.blockSignals(wasBlocked)
 
-    wasBlocked = self.invertedOutputSelector.blockSignals(True)
-    self.invertedOutputSelector.setCurrentNode(self._parameterNode.GetNodeReference("OutputVolumeInverse"))
-    self.invertedOutputSelector.blockSignals(wasBlocked)
+    wasBlocked = self.ui.fromProbeToUSFiducialWidget.blockSignals(True)
+    self.ui.fromProbeToUSFiducialWidget.setCurrentNode(self._parameterNode.GetNodeReference("FromProbeToUSFiducialNode"))
+    self.ui.fromProbeToUSFiducialWidget.blockSignals(wasBlocked)
 
-    wasBlocked = self.ui.imageThresholdSliderWidget.blockSignals(True)
-    self.ui.imageThresholdSliderWidget.value = float(self._parameterNode.GetParameter("Threshold"))
-    self.ui.imageThresholdSliderWidget.blockSignals(wasBlocked)
-
-    wasBlocked = self.ui.invertOutputCheckBox.blockSignals(True)
-    self.ui.invertOutputCheckBox.checked = (self._parameterNode.GetParameter("Invert") == "true")
-    self.ui.invertOutputCheckBox.blockSignals(wasBlocked)
+    wasBlocked = self.ui.toProbeToUSFiducialWidget.blockSignals(True)
+    self.ui.toProbeToUSFiducialWidget.setCurrentNode(self._parameterNode.GetNodeReference("ToProbeToUSFiducialNode"))
+    self.ui.toProbeToUSFiducialWidget.blockSignals(wasBlocked)
 
     # Update buttons states and tooltips
-    if self._parameterNode.GetNodeReference("InputVolume") and self._parameterNode.GetNodeReference("OutputVolume"):
-      self.ui.applyButton.toolTip = "Compute output volume"
-      self.ui.applyButton.enabled = True
-    else:
-      self.ui.applyButton.toolTip = "Select input and output volume nodes"
-      self.ui.applyButton.enabled = False
 
   def updateParameterNodeFromGUI(self, caller=None, event=None):
     """
@@ -311,11 +296,10 @@ class AbdominalBiopsyNavigationWidget(ScriptedLoadableModuleWidget, VTKObservati
     if self._parameterNode is None:
       return
 
-    self._parameterNode.SetNodeReferenceID("InputVolume", self.ui.inputSelector.currentNodeID)
-    self._parameterNode.SetNodeReferenceID("OutputVolume", self.ui.outputSelector.currentNodeID)
-    self._parameterNode.SetParameter("Threshold", str(self.ui.imageThresholdSliderWidget.value))
-    self._parameterNode.SetParameter("Invert", "true" if self.ui.invertOutputCheckBox.checked else "false")
-    self._parameterNode.SetNodeReferenceID("OutputVolumeInverse", self.invertedOutputSelector.currentNodeID)
+    self._parameterNode.SetNodeReferenceID("FromCTToReferenceFiducialNode", self.ui.fromCTToReferenceFiducialWidget.currentNodeID)
+    self._parameterNode.SetNodeReferenceID("ToCTToReferenceFiducialNode", self.ui.toCTToReferenceFiducialWidget.currentNodeID)
+    self._parameterNode.SetNodeReferenceID("FromProbeToUSFiducialNode", self.ui.fromProbeToUSFiducialWidget.currentNodeID)
+    self._parameterNode.SetNodeReferenceID("ToProbeToUSFiducialNode", self.ui.toProbeToUSFiducialWidget.currentNodeID)
 
   def setupCustomViews(self):
     logging.debug('setupCustomViews')
@@ -428,7 +412,6 @@ class AbdominalBiopsyNavigationWidget(ScriptedLoadableModuleWidget, VTKObservati
     self.toolCalibrationResultNode = self.StylusTipToStylus
     self.toolToReferenceNode = self.StylusToReference
     self.toolBeingCalibrated = 'Stylus'
-    self.toolCalibrationToolBaseNode = self.StylusBaseToStylus
     self.toolCalibrationModel = self.StylusModel_StylusTip
 
     self.ui.needlePivotCalibrationButton.setEnabled(False)
@@ -459,7 +442,6 @@ class AbdominalBiopsyNavigationWidget(ScriptedLoadableModuleWidget, VTKObservati
     self.toolCalibrationResultNode = self.NeedleTipToNeedle
     self.toolToReferenceNode = self.NeedleToReference
     self.toolBeingCalibrated = 'Needle'
-    self.toolCalibrationToolBaseNode = self.NeedleBaseToNeedle
     self.toolCalibrationModel = self.NeedleModel_NeedleTip
 
     self.ui.needlePivotCalibrationButton.setEnabled(False)
@@ -493,7 +475,7 @@ class AbdominalBiopsyNavigationWidget(ScriptedLoadableModuleWidget, VTKObservati
       # calibration completed
       if self.toolCalibrationMode == self.PIVOT_CALIBRATION:
 
-        calibrationStatus, calibrationError, toolLength = self.logic.pivotCalibration(self.calibrationErrorThresholdMm, self.toolCalibrationResultNode, self.toolCalibrationToolBaseNode)
+        calibrationStatus, calibrationError, toolLength = self.logic.pivotCalibration(self.calibrationErrorThresholdMm, self.toolCalibrationResultNode)
 
         self.updateDisplayedToolLength(toolLength)
 
@@ -622,7 +604,7 @@ class AbdominalBiopsyNavigationLogic(ScriptedLoadableModuleLogic):
     qtTimer.start()
     self.pivotCalibrationLogic.SetRecordingState(True)
 
-  def pivotCalibration(self, calibrationErrorThresholdMm, toolCalibrationResultNode, toolCalibrationToolBaseNode):
+  def pivotCalibration(self, calibrationErrorThresholdMm, toolCalibrationResultNode):
     logging.debug('pivotCalibration')
 
     self.pivotCalibrationLogic.SetRecordingState(False)
@@ -640,10 +622,6 @@ class AbdominalBiopsyNavigationLogic(ScriptedLoadableModuleLogic):
         self.pivotCalibrationLogic.GetToolTipToToolMatrix(toolTipToToolMatrix)
         self.pivotCalibrationLogic.ClearToolToReferenceMatrices()
         toolCalibrationResultNode.SetMatrixTransformToParent(toolTipToToolMatrix)
-
-        toolTipToToolBaseTransform = vtk.vtkMatrix4x4()
-        toolCalibrationResultNode.GetMatrixTransformToNode(toolCalibrationToolBaseNode, toolTipToToolBaseTransform)
-        toolLength = int(math.sqrt(toolTipToToolBaseTransform.GetElement(0, 3) ** 2 + toolTipToToolBaseTransform.GetElement(1,3) ** 2 + toolTipToToolBaseTransform.GetElement(2, 3) ** 2))
 
         return "Calibration completed", "Error = {0:.2f} mm".format(
           self.pivotCalibrationLogic.GetPivotRMSE()), toolLength
