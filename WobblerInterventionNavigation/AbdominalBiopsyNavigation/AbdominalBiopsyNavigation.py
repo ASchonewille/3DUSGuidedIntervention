@@ -124,7 +124,7 @@ class AbdominalBiopsyNavigationWidget(ScriptedLoadableModuleWidget, VTKObservati
 
   def setupScene(self):
 
-    self.modulePath = os.path.dirname(slicer.modules.liverbiopsy.path)
+    self.modulePath = os.path.dirname(slicer.modules.abdominalbiopsynavigation.path)
     self.moduleTransformsPath = os.path.join(self.modulePath, 'Resources/Transforms')
 
     self.toolCalibrationMode = self.PIVOT_CALIBRATION

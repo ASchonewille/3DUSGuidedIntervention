@@ -568,5 +568,21 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>ConnectPLUSBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>ToolCalibrationBox</receiver>
+   <slot>setChecked(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>243</x>
+     <y>48</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>243</x>
+     <y>81</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
 </ui>
