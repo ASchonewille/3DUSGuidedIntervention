@@ -54,7 +54,6 @@ class AbdominalBiopsyNavigationWidget(ScriptedLoadableModuleWidget, VTKObservati
     """
     Called when the user opens the module the first time and the widget is initialized.
     """
-    #TODO add code from liverbiopsy.py from setup
 
     ScriptedLoadableModuleWidget.setup(self)
 
@@ -121,6 +120,7 @@ class AbdominalBiopsyNavigationWidget(ScriptedLoadableModuleWidget, VTKObservati
 
     # Initial GUI update
     self.updateGUIFromParameterNode()
+
 
   def setupScene(self):
 
@@ -270,19 +270,19 @@ class AbdominalBiopsyNavigationWidget(ScriptedLoadableModuleWidget, VTKObservati
     # GUI update, which triggers MRML node update, which triggers GUI update, ...)
     # TODO add all ui elements that update mrml node
     wasBlocked = self.ui.fromCTToReferenceFiducialWidget.blockSignals(True)
-    self.ui.fromCTToReferenceFiducialWidget.setCurrentNode(self._parameterNode.GetNodeReference("FromCTToReferenceFiducialNode"))
+    self.ui.fromCTToReferenceFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName(self._parameterNode.GetParameter("FromCTToReferenceFiducialNode"), className='vtkMRMLMarkupsFiducialNode'))
     self.ui.fromCTToReferenceFiducialWidget.blockSignals(wasBlocked)
 
     wasBlocked = self.ui.toCTToReferenceFiducialWidget.blockSignals(True)
-    self.ui.toCTToReferenceFiducialWidget.setCurrentNode(self._parameterNode.GetNodeReference("ToCTToReferenceFiducialNode"))
+    self.ui.toCTToReferenceFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName(self._parameterNode.GetParameter("ToCTToReferenceFiducialNode"), className='vtkMRMLMarkupsFiducialNode'))
     self.ui.toCTToReferenceFiducialWidget.blockSignals(wasBlocked)
 
     wasBlocked = self.ui.fromProbeToUSFiducialWidget.blockSignals(True)
-    self.ui.fromProbeToUSFiducialWidget.setCurrentNode(self._parameterNode.GetNodeReference("FromProbeToUSFiducialNode"))
+    self.ui.fromProbeToUSFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName(self._parameterNode.GetParameter("FromProbeToUSFiducialNode"), className='vtkMRMLMarkupsFiducialNode'))
     self.ui.fromProbeToUSFiducialWidget.blockSignals(wasBlocked)
 
     wasBlocked = self.ui.toProbeToUSFiducialWidget.blockSignals(True)
-    self.ui.toProbeToUSFiducialWidget.setCurrentNode(self._parameterNode.GetNodeReference("ToProbeToUSFiducialNode"))
+    self.ui.toProbeToUSFiducialWidget.setCurrentNode(slicer.util.getFirstNodeByName(self._parameterNode.GetParameter("ToProbeToUSFiducialNode"), className='vtkMRMLMarkupsFiducialNode'))
     self.ui.toProbeToUSFiducialWidget.blockSignals(wasBlocked)
 
     # Update buttons states and tooltips
@@ -296,10 +296,10 @@ class AbdominalBiopsyNavigationWidget(ScriptedLoadableModuleWidget, VTKObservati
     if self._parameterNode is None:
       return
 
-    self._parameterNode.SetNodeReferenceID("FromCTToReferenceFiducialNode", self.ui.fromCTToReferenceFiducialWidget.currentNodeID)
-    self._parameterNode.SetNodeReferenceID("ToCTToReferenceFiducialNode", self.ui.toCTToReferenceFiducialWidget.currentNodeID)
-    self._parameterNode.SetNodeReferenceID("FromProbeToUSFiducialNode", self.ui.fromProbeToUSFiducialWidget.currentNodeID)
-    self._parameterNode.SetNodeReferenceID("ToProbeToUSFiducialNode", self.ui.toProbeToUSFiducialWidget.currentNodeID)
+    self._parameterNode.SetParameter("FromCTToReferenceFiducialNode", self.ui.fromCTToReferenceFiducialWidget.currentNode.GetName())
+    self._parameterNode.SetParameter("ToCTToReferenceFiducialNode", self.ui.toCTToReferenceFiducialWidget.currentNode.GetName())
+    self._parameterNode.SetParameter("FromProbeToUSFiducialNode", self.ui.fromProbeToUSFiducialWidget.currentNode.GetName())
+    self._parameterNode.SetParameter("ToProbeToUSFiducialNode", self.ui.toProbeToUSFiducialWidget.currentNode.GetName())
 
   def setupCustomViews(self):
     logging.debug('setupCustomViews')
@@ -590,10 +590,14 @@ class AbdominalBiopsyNavigationLogic(ScriptedLoadableModuleLogic):
     """
     Initialize parameter node with default settings.
     """
-    if not parameterNode.GetParameter("Threshold"):
-      parameterNode.SetParameter("Threshold", "50.0")
-    if not parameterNode.GetParameter("Invert"):
-      parameterNode.SetParameter("Invert", "false")
+    if not parameterNode.GetParameter("FromCTToReferenceFiducialNode"):
+      parameterNode.SetParameter("FromCTToReferenceFiducialNode", "FromCTToReferenceFiducialNode")
+    if not parameterNode.GetParameter("ToCTToReferenceFiducialNode"):
+      parameterNode.SetParameter("ToCTToReferenceFiducialNode", "ToCTToReferenceFiducialNode")
+    if not parameterNode.GetParameter("FromProbeToUSFiducialNode"):
+      parameterNode.SetParameter("FromProbeToUSFiducialNode", "FromProbeToUSFiducialNode")
+    if not parameterNode.GetParameter("ToProbeToUSFiducialNode"):
+      parameterNode.SetParameter("ToProbeToUSFiducialNode", "ToProbeToUSFiducialNode")
 
   def toolCalibration(self, transformNodeToolToReference, qtTimer):
     logging.debug('toolCalibration')

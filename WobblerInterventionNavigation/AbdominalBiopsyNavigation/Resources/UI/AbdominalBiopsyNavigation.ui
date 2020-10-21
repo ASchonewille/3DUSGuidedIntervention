@@ -240,10 +240,10 @@
             <bool>false</bool>
            </property>
            <property name="nodeSelectorVisible">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="optionsVisible">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="defaultNodeColor">
             <color>
@@ -283,7 +283,7 @@
          <item row="0" column="0" colspan="2">
           <widget class="qSlicerSimpleMarkupsWidget" name="toCTToReferenceFiducialWidget">
            <property name="nodeSelectorVisible">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="defaultNodeColor">
             <color>
@@ -323,7 +323,7 @@
       <string>Settings</string>
      </property>
      <property name="collapsed">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <layout class="QFormLayout" name="formLayout_13">
       <item row="0" column="0">
