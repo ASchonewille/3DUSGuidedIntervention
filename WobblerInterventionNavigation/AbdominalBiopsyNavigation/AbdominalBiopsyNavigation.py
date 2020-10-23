@@ -155,6 +155,9 @@ class AbdominalBiopsyNavigationWidget(ScriptedLoadableModuleWidget, VTKObservati
     self.TableToProbe = self.createVTKMRMLElement('TableToProbe', 'vtkMRMLLinearTransformNode')
     self.MRIToTable = self.createVTKMRMLElement('MRIToTable', 'vtkMRMLLinearTransformNode')
     self.ImageToMRI = self.createVTKMRMLElement('ImageToMRI', 'vtkMRMLLinearTransformNode')
+    self.ProbeToReference = self.createVTKMRMLElement('ProbeToReference', 'vtkMRMLLinearTransformNode')
+    self.USToProbe = self.createVTKMRMLElement('USToProbe', 'vtkMRMLLinearTransformNode')
+
 
     # Setup Stylus Transforms
     self.StylusTipToStylus = self.createVTKMRMLElement('StylusTipToStylus', 'vtkMRMLLinearTransformNode')
@@ -197,6 +200,10 @@ class AbdominalBiopsyNavigationWidget(ScriptedLoadableModuleWidget, VTKObservati
     self.NeedleTipToNeedle.SetAndObserveTransformNodeID(self.NeedleToReference.GetID())
     self.NeedleModel_NeedleTip.SetAndObserveTransformNodeID(self.NeedleTipToNeedle.GetID())
     self.CTToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
+    self.ProbeToReference.SetAndObserveTransformNodeID(self.ReferenceToRas.GetID())
+    self.USToProbe.SetAndObserveTransformNodeID(self.ProbeToReference.GetID())
+    self.FromCTToReferenceFiducialNode.SetAndObserveTransformNodeID(self.CTToReference.GetID())
+    self.ToCTToReferenceFiducialNode.SetAndObserveTransformNodeID(self.USToProbe.GetID()) # TODO: Change to be under StylusTipToStylus for real protocol
 
   def createVTKMRMLElement(self, transformName, vtkMRMLClassName):
     vtkMRMLElement = slicer.util.getFirstNodeByName(transformName, className=vtkMRMLClassName)
@@ -524,6 +531,9 @@ class AbdominalBiopsyNavigationWidget(ScriptedLoadableModuleWidget, VTKObservati
     outputTransformNode = self.ProbeToUS
 
     calibrationMessage, RMSE = self.logic.landmarkRegistration(fromMarkupsNode, toMarkupsNode, outputTransformNode)
+
+    self.USToProbe.SetMatrixTransformToParent(self.ProbeToUS.GetMatrixTransformFromParent())
+    self.USToProbe.Inverse()
 
     self.ui.USCalibrationErrorLabel.setText(calibrationMessage.format(RMSE))
 
